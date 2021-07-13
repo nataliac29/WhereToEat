@@ -3,6 +3,8 @@ package com.example.wheretoeat;
 import android.content.Intent;
 import android.os.Bundle;
 
+import com.facebook.AccessToken;
+import com.facebook.login.LoginManager;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.tabs.TabLayout;
@@ -39,11 +41,22 @@ public class MainActivity extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                ParseUser.logOut();
-                Intent i = new Intent(MainActivity.this, LoginActivity.class);
-                i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP); // this makes sure the Back button won't work
-                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); // same as above
-                startActivity(i);
+                if (ParseUser.getCurrentUser() != null) {
+                    ParseUser.logOut();
+                    Intent i = new Intent(MainActivity.this, LoginActivity.class);
+                    i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP); // this makes sure the Back button won't work
+                    i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); // same as above
+                    startActivity(i);
+                }
+                AccessToken accessToken = AccessToken.getCurrentAccessToken();
+                boolean isLoggedIn = accessToken != null && !accessToken.isExpired();
+                if (isLoggedIn) {
+                    LoginManager.getInstance().logOut();
+                    Intent i = new Intent(MainActivity.this, LoginActivity.class);
+                    i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP); // this makes sure the Back button won't work
+                    i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); // same as above
+                    startActivity(i);
+                }
             }
         });
     }
