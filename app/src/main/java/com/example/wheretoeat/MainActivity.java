@@ -1,5 +1,6 @@
 package com.example.wheretoeat;
 
+import android.content.Intent;
 import android.os.Bundle;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -15,6 +16,7 @@ import android.view.View;
 
 import com.example.wheretoeat.ui.main.SectionsPagerAdapter;
 import com.example.wheretoeat.databinding.ActivityMainBinding;
+import com.parse.ParseUser;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -37,8 +39,11 @@ public class MainActivity extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+                ParseUser.logOut();
+                Intent i = new Intent(MainActivity.this, LoginActivity.class);
+                i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP); // this makes sure the Back button won't work
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); // same as above
+                startActivity(i);
             }
         });
     }

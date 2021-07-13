@@ -2,4 +2,9 @@
     <string name="app_name">WhereToEat</string>
     <string name="tab_text_1">Tab 1</string>
     <string name="tab_text_2">Tab 2</string>
+    <string name="back4app_server_url">https://parseapi.back4app.com/</string>
+    <string name="back4app_app_id">YKfDGhBk9OUQkE69vNhm3mIqhsobSm7EVDjp3dZz</string>
+    <string name="back4app_client_key">mgL3N9r5WAOXfNW1YmQ81w9B8txoSGyxWQGRFm0h</string>
+    <string name="facebook_app_id">568770524132064</string>
+    <string name="fb_login_protocol_scheme">fb568770524132064</string>
 </resources>
