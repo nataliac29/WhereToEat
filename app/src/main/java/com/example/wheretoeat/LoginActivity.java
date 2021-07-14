@@ -185,7 +185,7 @@ public class LoginActivity extends AppCompatActivity {
                                                 String lastName = json.getString("last_name");
                                                 String username = json.getString("email");
                                                 String password = "default";
-                                                signupUser(username, password, firstName, lastName);
+                                                signupUser(username, password, firstName, lastName, id);
                                             }
                                         } catch (JSONException e) {
                                             Log.e(TAG, "graphql error", e);
@@ -213,15 +213,16 @@ public class LoginActivity extends AppCompatActivity {
         finish();
     }
 
-    public void signupUser(String username, String password, String firstName, String lastName) {
+    public void signupUser(String username, String password, String firstName, String lastName, String id) {
         Log.e(TAG, "In signup user");
         ParseUser user = new ParseUser();
-        CustomUser customUser = new CustomUser(user);
         // Set core properties
-        customUser.setFirstName(firstName);
-        customUser.setLastName(lastName);
+        user.put("firstName", firstName);
+        user.put("lastName", lastName);
+        user.setObjectId(id);
         user.setUsername(username);
         user.setPassword(password);
+
         // Invoke signUpInBackground
         user.signUpInBackground(new SignUpCallback() {
             public void done(ParseException e) {

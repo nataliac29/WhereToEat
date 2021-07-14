@@ -15,7 +15,7 @@ public class CustomUser {
     public static final String KEY_ID = "objectId";
 
 
-    private ParseUser user;
+    public ParseUser user;
 
     public CustomUser(ParseUser parseUser) {
         user = parseUser;
