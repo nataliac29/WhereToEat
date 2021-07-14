@@ -16,7 +16,7 @@ import com.parse.SignUpCallback;
 
 public class SignupActivity extends AppCompatActivity {
 
-    public static final String TAG = "LoginActivity";
+    public static final String TAG = "SignupActivity";
     private EditText etSignupFirstName;
     private EditText etSignupLastName;
     private EditText etSignupUsername;
@@ -59,7 +59,7 @@ public class SignupActivity extends AppCompatActivity {
     }
 
 
-    private void signupUser(String username, String password, String firstName, String lastName) {
+    public void signupUser(String username, String password, String firstName, String lastName) {
         Log.e(TAG, "In signup user");
         ParseUser user = new ParseUser();
         CustomUser customUser = new CustomUser(user);

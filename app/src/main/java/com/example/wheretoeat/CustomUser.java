@@ -9,10 +9,11 @@ import org.json.JSONArray;
 
 import java.util.ArrayList;
 
-
 public class CustomUser {
     public static final String KEY_FIRST_NAME = "firstName";
     public static final String KEY_LAST_NAME= "lastName";
+    public static final String KEY_ID = "objectId";
+
 
     private ParseUser user;
 
@@ -37,6 +38,9 @@ public class CustomUser {
         user.saveInBackground();
 
     }
+
+
+
 
 
 }
