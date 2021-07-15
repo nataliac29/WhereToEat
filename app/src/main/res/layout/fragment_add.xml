@@ -34,7 +34,7 @@
         android:paddingEnd="10dp" />
 
     <Button
-        android:id="@+id/button2"
+        android:id="@+id/btnCode"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@+id/etCode"
