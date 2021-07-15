@@ -16,20 +16,20 @@ public class Friends extends ParseObject {
     public static final String KEY_RESTAURANTS = "restaurants";
 
 
-    public String getInitUser () {
-        return getString(KEY_INIT_USER);
+    public ParseUser getInitUser () {
+        return getParseUser(KEY_INIT_USER);
     }
 
-    public void setInitUser (String username) {
-        put(KEY_INIT_USER, username);
+    public void setInitUser (ParseUser user) {
+        put(KEY_INIT_USER, user);
     }
 
-    public String getRecipientUser () {
-        return getString(KEY_RECIPIENT_USER);
+    public ParseUser getRecipientUser () {
+        return getParseUser(KEY_RECIPIENT_USER);
     }
 
-    public void setRecipientUser (String username) {
-        put(KEY_RECIPIENT_USER, username);
+    public void setRecipientUser (ParseUser user) {
+        put(KEY_RECIPIENT_USER, user);
     }
 
     public JSONArray getRestaurants () {
