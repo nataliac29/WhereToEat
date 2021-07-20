@@ -3,6 +3,7 @@ package com.example.wheretoeat;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Parcelable;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -13,15 +14,19 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.facebook.AccessToken;
+import com.parse.FindCallback;
+import com.parse.ParseException;
 import com.parse.ParseFile;
 import com.parse.ParseObject;
 import com.parse.ParseQuery;
 import com.parse.ParseUser;
 
+import org.json.JSONArray;
 import org.parceler.Parcels;
 
 import java.util.ArrayList;
@@ -59,6 +64,7 @@ public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.ViewHold
     public int getItemCount() {
         return users.size();
     }
+
     public void clear() {
         users.clear();
         notifyDataSetChanged();
@@ -75,16 +81,46 @@ public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.ViewHold
         private TextView tvName;
         private Button btnBeginMatch;
 
+        private Friends currFriend;
+
+        private JSONArray restaurants;
+
+
 
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             tvName = itemView.findViewById(R.id.tvName);
             btnBeginMatch = itemView.findViewById(R.id.btnBeginMatch);
-            itemView.setOnClickListener(this::onClick);
+            btnBeginMatch.setOnClickListener(this::onClick);
 
 
         }
+
+        private void onClick(View view) {
+            // gets item position
+            int position = getAdapterPosition();
+            // make sure the position is valid, i.e. actually exists in the view
+            if (position != RecyclerView.NO_POSITION) {
+                // get the movie at the position, this won't work if the class is static
+                if (btnBeginMatch.getText().equals("Start Matching")) {
+                    Log.e(TAG, "button text check");
+                    Intent intent = new Intent(context, MatchActivity.class);
+                    // serialize the movie using parceler, use its short name as a key
+                    intent.putExtra("friendGroup", currFriend.getObjectId());
+                    // show the activity
+                    context.startActivity(intent);
+                }
+                else {
+                    Intent intent = new Intent(context, ViewMatchesActivity.class);
+                    // serialize the movie using parceler, use its short name as a key
+//                    intent.putExtra("restaurants", (Parcelable) restaurants);
+                    // show the activity
+                    context.startActivity(intent);
+                }
+            }
+        }
+
 
         public void bind(ParseUser user) {
             if (ParseUser.getCurrentUser() != null) {
@@ -126,54 +162,64 @@ public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.ViewHold
 
             ParseQuery<ParseObject> mainQuery = ParseQuery.or(queries);
 
-            mainQuery.findInBackground((friendList, e) -> {
-                if(e == null){
-                    btnBeginMatch.setText("Hello");
-                    for (ParseObject friend : friendList) {
-                        if (friend.getJSONArray("mutualMatches") != null) {
-                            btnBeginMatch.setText("View Matches");
-                        }
-                        else {
-                            ParseQuery<ParseObject> checkifMatched = ParseQuery.getQuery("Matches");
-                            checkifMatched.whereEqualTo("user", currentUser);
-                            checkifMatched.whereEqualTo("group_id", friend);
+            // resets button if previously disabled
+            btnBeginMatch.setEnabled(true);
+            mainQuery.findInBackground(new FindCallback<ParseObject>() {
+                @Override
+                public void done(List<ParseObject> objects, ParseException e) {
+                    if (e == null) {
+                        for (ParseObject friend : objects) {
+                            currFriend = (Friends) friend;
+                            if (friend.getJSONArray("mutualMatches") != null) {
+                                    ((AppCompatActivity) context).runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            btnBeginMatch.setText("View Matches");
+                                            restaurants = friend.getJSONArray("mutualMatches");
+                                        }
+                                    });
+                            } else {
+                                ParseQuery<ParseObject> checkifMatched = ParseQuery.getQuery("Matches");
+                                checkifMatched.whereEqualTo("user", currentUser);
+                                checkifMatched.whereEqualTo("group_id", friend);
 
-                            checkifMatched.findInBackground((matchList, eMatch) -> {
-                                if (eMatch == null) {
-                                        if (matchList.size() == 0) {
-                                            btnBeginMatch.setText("Start Matching");
+                                checkifMatched.findInBackground(new FindCallback<ParseObject>() {
+                                    @Override
+                                    public void done(List<ParseObject> matchList, ParseException eMatch) {
+                                        if (eMatch == null) {
+                                            if (matchList.size() == 0) {
+                                                    ((AppCompatActivity) context).runOnUiThread(new Runnable() {
+                                                        @Override
+                                                        public void run() {
+                                                            btnBeginMatch.setText("Start Matching");
+                                                        }
+                                                    });
+                                            }
+                                            else {
+                                                ((AppCompatActivity) context).runOnUiThread(new Runnable() {
+                                                    @Override
+                                                    public void run() {
+                                                        btnBeginMatch.setText("Waiting for friend's matches");
+                                                        btnBeginMatch.setEnabled(false);
+                                                    }
+                                                });
+                                            }
+                                        } else {
+                                           Log.e(TAG, "in checkifMatched exception", eMatch);
                                         }
                                     }
-                                else {
-                                    btnBeginMatch.setText("Waiting for friend's matches");
-                                }
-                            });
+                                });
+
+                            }
                         }
+                    } else {
+                        Log.e(TAG, "in main query exception", e);
                     }
-                }else{
-                    Toast.makeText(context, "Error: " +e.getMessage(), Toast.LENGTH_SHORT).show();
                 }
+
+
             });
-
-
         }
 
-        public void onClick(View v) {
-            // gets item position
-            int position = getAdapterPosition();
-            // make sure the position is valid, i.e. actually exists in the view
-            if (position != RecyclerView.NO_POSITION) {
-                // get the movie at the position, this won't work if the class is static
-                ParseUser user = users.get(position);
-
-                Toast.makeText(FriendsAdapter.this.context, "Success!", Toast.LENGTH_SHORT).show();
-                // create intent for the new activity
-//                Intent intent = new Intent(context, PostDetailsActivity.class);
-//                // serialize the movie using parceler, use its short name as a key
-//                intent.putExtra("Post", Parcels.wrap(post));
-//                // show the activity
-//                context.startActivity(intent);
-            }
-        }
     }
 }

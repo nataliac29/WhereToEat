@@ -79,6 +79,7 @@ public class GroupsFragment extends Fragment {
         rvFriends.setAdapter(adapter);
         rvFriends.setLayoutManager(new LinearLayoutManager(getContext()));
 
+        queryFriends();
         // Lookup the swipe container view
         swipeContainer =  view.findViewById(R.id.swipeContainer);
         // Setup refresh listener which triggers new data loading
@@ -97,7 +98,7 @@ public class GroupsFragment extends Fragment {
                 android.R.color.holo_orange_light,
                 android.R.color.holo_red_light);
 
-        queryFriends();
+
     }
 
 
@@ -142,102 +143,54 @@ public class GroupsFragment extends Fragment {
 
         ParseQuery<ParseObject> mainQuery = ParseQuery.or(queries);
 
-//        checkRecipientQuery.findInBackground((friendList, e) -> {
-//            if(e == null){
-//                // commentList now contains the last ten comments, and the "post"
-//                // field has been populated. For example:
-//                for (ParseObject friend : friendList) {
-//                    // This does not require a network access.
-//                    friend.getRelation("initial_user").getQuery().findInBackground((objects, e1) -> {
-//                        if (e1 == null) {
-//                            for (ParseObject user : objects) {
-//                                ParseUser parseUser = (ParseUser) user;
-//                                adapter.clear();
-//                                allUsers.add(parseUser);
-//                                swipeContainer.setRefreshing(false);
-//                            }
-//                        } else {
-//                            Toast.makeText(getContext(), e1.getLocalizedMessage(), Toast.LENGTH_SHORT).show();
-//                        }
-//                    });
-////                    Log.e(TAG, "checkRecipientQuery: " + user);
-//                }
-//            }
-//
-//        });
-
-
-
-        mainQuery.findInBackground((friendList, e) -> {
-            if(e == null){
-                // commentList now contains the last ten comments, and the "post"
-                // field has been populated. For example:
-                for (ParseObject friend : friendList) {
-                    // This does not require a network access.
-
-
-
-                    friend.getRelation("recipient_user").getQuery().findInBackground((objects, e2) -> {
-                        if (e2 == null) {
-                            for (ParseObject user : objects) {
-                                if (!(user.getObjectId().equals(currentUser.getObjectId()))) {
-                                    ParseUser recipientUser = (ParseUser) user;
-                                    allTempUsers.add(recipientUser);
-                                }
-                            }
-                        } else {
-                            Toast.makeText(getContext(), e2.getLocalizedMessage(), Toast.LENGTH_SHORT).show();
-                        }
-                        friend.getRelation("initial_user").getQuery().findInBackground((objects1, e1) -> {
-                            if (e1 == null) {
-                                for (ParseObject user : objects1) {
-                                    if (!(user.getObjectId().equals(currentUser.getObjectId()))) {
-                                        allTempUsers.add((ParseUser) user);
+        mainQuery.findInBackground(new FindCallback<ParseObject>() {
+            @Override
+            public void done(List<ParseObject> objects, ParseException e) {
+                if (e == null) {
+                    // commentList now contains the last ten comments, and the "post"
+                    // field has been populated. For example:
+                    for (ParseObject friend : objects) {
+                        // This does not require a network access.
+                        friend.getRelation("recipient_user").getQuery().findInBackground(new FindCallback<ParseObject>() {
+                            @Override
+                            public void done(List<ParseObject> objects2, ParseException e2) {
+                                if (e2 == null) {
+                                    for (ParseObject user : objects2) {
+                                        if (!(user.getObjectId().equals(currentUser.getObjectId()))) {
+                                            ParseUser recipientUser = (ParseUser) user;
+                                            allTempUsers.add(recipientUser);
+                                        }
                                     }
+                                } else {
+                                    Toast.makeText(getContext(), e2.getLocalizedMessage(), Toast.LENGTH_SHORT).show();
                                 }
-                            } else {
-                                Toast.makeText(getContext(), e1.getLocalizedMessage(), Toast.LENGTH_SHORT).show();
+                                friend.getRelation("initial_user").getQuery().findInBackground(new FindCallback<ParseObject>() {
+                                    @Override
+                                    public void done(List<ParseObject> objects3, ParseException e3) {
+                                        if (e3 == null) {
+                                            for (ParseObject user : objects3) {
+                                                if (!(user.getObjectId().equals(currentUser.getObjectId()))) {
+                                                    allTempUsers.add((ParseUser) user);
+                                                }
+                                            }
+                                        } else {
+                                            Toast.makeText(getContext(), e3.getLocalizedMessage(), Toast.LENGTH_SHORT).show();
+                                        }
+                                        adapter.clear();
+                                        allUsers.addAll(allTempUsers);
+                                        adapter.notifyDataSetChanged();
+                                        for (ParseUser user : allUsers) {
+                                            Log.e(TAG, user.getString("firstName"));
+                                        }
+                                        swipeContainer.setRefreshing(false);
+                                    }
+                                });
                             }
-                            adapter.clear();
-                            allUsers.addAll(allTempUsers);
-                            adapter.notifyDataSetChanged();
-                            for (ParseUser user : allUsers) {
-                                Log.e(TAG, user.getString("firstName"));
-                            }
-                            swipeContainer.setRefreshing(false);
+
                         });
-                    });
-
-//                    Log.e(TAG, "checkRecipientQuery: " + user);
+                    }
                 }
-
             }
-
         });
-
     }
-
-//    @Override
-//    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-//        if (requestCode == REQUEST_CODE && resultCode == RESULT_OK ) {
-//            // Get data from the intent (the tweet)
-//            Post post = Parcels.unwrap(data.getParcelableExtra("post"));
-//
-//            //Update the RV with the new tweet
-//            //Modify data source
-//            allPosts.add(0, post);
-//            //update the adapter
-//            adapter.notifyItemInserted(0);
-//            rvPosts.smoothScrollToPosition(0);
-//        }
-//        super.onActivityResult(requestCode, resultCode, data);
-//    }
 }
-
-
-//        // save received posts to list and notify adapter of new data
-//        adapter.clear();
-//        // ...the data has come back, add new items to your adapter...
-//        adapter.addAll(posts);
-//        adapter.notifyDataSetChanged();
-//        swipeContainer.setRefreshing(false);
