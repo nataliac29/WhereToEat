@@ -90,7 +90,7 @@ public class ViewMatchesAdapter extends RecyclerView.Adapter<ViewMatchesAdapter.
             tvRestaurantName = itemView.findViewById(R.id.tvRestaurantName);
             tvRestaurantCategories = itemView.findViewById(R.id.tvRestaurantCategories);
             tvRestaurantRating = itemView.findViewById(R.id.tvRestaurantRating);
-//            btnLikeRestaurant = itemView.findViewById(R.id.btnLikeRestaurant);
+            btnLikeRestaurant = itemView.findViewById(R.id.btnLikeRestaurant);
 //            btnLikeRestaurant.setOnClickListener(this::onLikeClick);
         }
 
@@ -121,6 +121,7 @@ public class ViewMatchesAdapter extends RecyclerView.Adapter<ViewMatchesAdapter.
             tvRestaurantCategories.setText(restaurant.getJSONArray("categories").getString(0));
             double rating = restaurant.getDouble("rating") / 2.0f;
             tvRestaurantRating.setRating((float) rating);
+            btnLikeRestaurant.setText("View more details");
 
         }
     }

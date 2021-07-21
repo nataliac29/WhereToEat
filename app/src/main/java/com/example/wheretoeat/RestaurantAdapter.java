@@ -129,6 +129,7 @@ public class RestaurantAdapter extends RecyclerView.Adapter<RestaurantAdapter.Vi
             tvRestaurantCategories.setText(restaurant.getJSONArray("categories").getString(0));
             double rating = restaurant.getDouble("rating") / 2.0f;
             tvRestaurantRating.setRating((float) rating);
+            btnLikeRestaurant.setText("LIKE");
 
         }
     }
