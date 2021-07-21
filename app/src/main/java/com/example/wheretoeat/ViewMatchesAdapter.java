@@ -33,20 +33,17 @@ import org.w3c.dom.Text;
 
 import java.util.List;
 
-public class RestaurantAdapter extends RecyclerView.Adapter<RestaurantAdapter.ViewHolder>  {
+public class ViewMatchesAdapter extends RecyclerView.Adapter<ViewMatchesAdapter.ViewHolder>  {
     Context context;
     JSONArray restaurants;
-    JSONObject restaurant;
-    JSONArray likedRestaurants;
     String friendId;
 
-    DataTransferInterface dtInterface;
 
-    public RestaurantAdapter(Context context, JSONArray restaurants, String friendId, DataTransferInterface dtInterface) {
+    public ViewMatchesAdapter(Context context, JSONArray restaurants, String friendId ) {
         this.context = context;
         this.restaurants = restaurants;
         this.friendId = friendId;
-        this.dtInterface = dtInterface;
+
     }
 
     //Usually involves inflating a layout from XML and retuning the holder
@@ -54,7 +51,6 @@ public class RestaurantAdapter extends RecyclerView.Adapter<RestaurantAdapter.Vi
     @Override
     public ViewHolder onCreateViewHolder(@NonNull @NotNull ViewGroup parent, int viewType) {
         View restaurantView = LayoutInflater.from(context).inflate(R.layout.item_restaurant, parent, false);
-        likedRestaurants = new JSONArray();
         return new ViewHolder(restaurantView);
     }
     //involves populating data into the item through holder
@@ -94,33 +90,29 @@ public class RestaurantAdapter extends RecyclerView.Adapter<RestaurantAdapter.Vi
             tvRestaurantName = itemView.findViewById(R.id.tvRestaurantName);
             tvRestaurantCategories = itemView.findViewById(R.id.tvRestaurantCategories);
             tvRestaurantRating = itemView.findViewById(R.id.tvRestaurantRating);
-            btnLikeRestaurant = itemView.findViewById(R.id.btnLikeRestaurant);
-            btnLikeRestaurant.setOnClickListener(this::onLikeClick);
+//            btnLikeRestaurant = itemView.findViewById(R.id.btnLikeRestaurant);
+//            btnLikeRestaurant.setOnClickListener(this::onLikeClick);
         }
 
-        public JSONArray getLikedRestaurants() {
-            return likedRestaurants;
-        }
 
-        public void onLikeClick(View v)  {
-            // gets item position
-            int position = getAdapterPosition();
-            // make sure the position is valid, i.e. actually exists in the view
-            if (position != RecyclerView.NO_POSITION) {
-                // get the movie at the position, this won't work if the class is static
-                JSONObject movie = null;
-                try {
-                    movie = (JSONObject) restaurants.get(position);
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-                likedRestaurants.put(movie);
-                dtInterface.onSetValues(likedRestaurants);
-                restaurants.remove(position);
-                notifyDataSetChanged();
-                notifyItemRangeRemoved(position, restaurants.length());
-            }
-        }
+//        public void onLikeClick(View v)  {
+//            // gets item position
+//            int position = getAdapterPosition();
+//            // make sure the position is valid, i.e. actually exists in the view
+//            if (position != RecyclerView.NO_POSITION) {
+//                // get the movie at the position, this won't work if the class is static
+//                JSONObject movie = null;
+//                try {
+//                    movie = (JSONObject) restaurants.get(position);
+//                } catch (JSONException e) {
+//                    e.printStackTrace();
+//                }
+//                likedRestaurants.put(movie);
+//                restaurants.remove(position);
+//                notifyDataSetChanged();
+//                notifyItemRangeRemoved(position, restaurants.length());
+//            }
+//        }
 
 
 
@@ -133,4 +125,3 @@ public class RestaurantAdapter extends RecyclerView.Adapter<RestaurantAdapter.Vi
         }
     }
 }
-

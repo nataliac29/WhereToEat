@@ -113,8 +113,7 @@ public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.ViewHold
                 }
                 else {
                     Intent intent = new Intent(context, ViewMatchesActivity.class);
-                    // serialize the movie using parceler, use its short name as a key
-//                    intent.putExtra("restaurants", (Parcelable) restaurants);
+                    intent.putExtra("friendGroup", currFriend.getObjectId());
                     // show the activity
                     context.startActivity(intent);
                 }

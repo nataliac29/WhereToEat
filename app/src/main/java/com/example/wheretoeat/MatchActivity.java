@@ -15,6 +15,7 @@ import android.widget.Toast;
 
 import com.facebook.AccessToken;
 import com.parse.FindCallback;
+import com.parse.Parse;
 import com.parse.ParseException;
 import com.parse.ParseObject;
 import com.parse.ParseQuery;
@@ -24,6 +25,7 @@ import com.parse.SaveCallback;
 
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 import org.parceler.Parcels;
 
 import java.util.ArrayList;
@@ -31,11 +33,17 @@ import java.util.List;
 
 public class MatchActivity extends AppCompatActivity implements DataTransferInterface {
 
+    private static final String TAG = "MatchActivity";
+
+
     public ParseUser currentUser;
     public String currFriend;
+    public Friends currFriendObject;
     public JSONArray restaurants;
     public JSONArray likedRestaurants;
+    public JSONArray mutualMatches;
     private Button btnDoneMatching;
+    private ParseUser otherUser;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,6 +96,7 @@ public class MatchActivity extends AppCompatActivity implements DataTransferInte
                 addUser(match);
             }
         });
+
     }
 
     private void addUser(Matches match) {
@@ -126,7 +135,7 @@ public class MatchActivity extends AppCompatActivity implements DataTransferInte
             @Override
             public void done(List<ParseObject> objects, ParseException e) {
                 if (e == null) {
-                    Friends currFriendObject = (Friends) objects.get(0);
+                    currFriendObject = (Friends) objects.get(0);
                     ParseRelation<ParseObject> userRelation = match.getRelation("group_id");
                     userRelation.add(currFriendObject);
                     try {
@@ -150,6 +159,7 @@ public class MatchActivity extends AppCompatActivity implements DataTransferInte
             public void done(ParseException e) {
                 if (e == null) {
                     Log.e("MatchActivity", "success saving matches");
+                    findOtherUser();
                 }
                 else {
                     Log.e("MatchActivity", "Matches save was not successful", e);
@@ -160,6 +170,109 @@ public class MatchActivity extends AppCompatActivity implements DataTransferInte
         startActivity(i);
         finish();
     }
+
+    // check if the other user has finished matching, if so find mutual matches
+    private void findOtherUser() {
+        currFriendObject.getRelation("recipient_user").getQuery().findInBackground(new FindCallback<ParseObject>() {
+            @Override
+            public void done(List<ParseObject> objects2, ParseException e2) {
+                if (e2 == null) {
+                    for (ParseObject user : objects2) {
+                        if (!(user.getObjectId().equals(currentUser.getObjectId()))) {
+                            Log.e(TAG, "got other user pt1" + otherUser.getObjectId());
+                            otherUser = (ParseUser) user;
+                        } else {
+                            currFriendObject.getRelation("initial_user").getQuery().findInBackground(new FindCallback<ParseObject>() {
+                                @Override
+                                public void done(List<ParseObject> objects, ParseException e) {
+                                    if (e == null) {
+                                        for (ParseObject user : objects) {
+                                            otherUser = (ParseUser) user;
+                                            Log.e(TAG, "got other user" + otherUser.getObjectId());
+                                            checkMatchingDone();
+                                        }
+                                    } else {
+                                        Log.e("MatchActivity", "error getting other user", e);
+
+                                    }
+                                }
+                            });
+                        }
+                    }
+                } else {
+                    Log.e("MatchActivity", "error getting other user", e2);
+                }
+            }
+        });
+    }
+
+
+ private void checkMatchingDone() {
+     Log.e(TAG, "in checkmatchingdone");
+
+     ParseQuery<ParseObject> checkifMatched = ParseQuery.getQuery("Matches");
+     checkifMatched.whereEqualTo("user", otherUser);
+     checkifMatched.whereEqualTo("group_id", currFriendObject);
+
+     Log.e(TAG, "in checkMatchingDone, before query" );
+
+     checkifMatched.findInBackground(new FindCallback<ParseObject>() {
+         @Override
+         public void done(List<ParseObject> objects, ParseException e) {
+             if (e == null) {
+                 Log.e(TAG, "in checkMatchingDone, e not null" );
+                 // if other user has submitted their matches
+                 if (objects.size() != 0) {
+
+                     JSONArray otherUserMatches = objects.get(0).getJSONArray("matches");
+                     Log.e(TAG, "in checkMatchingDone, found other user matches" + otherUserMatches.toString());
+                     try {
+                         findMutualMatches(otherUserMatches);
+                     } catch (JSONException jsonException) {
+                         jsonException.printStackTrace();
+                     }
+                 }
+             } else {
+                 Log.e("MatchActivity", "error checking if matching done", e);
+             }
+         }
+     });
+ }
+
+    private void findMutualMatches(JSONArray otherUserMatches) throws JSONException {
+        Log.e(TAG, "in findMutualMatches");
+        JSONArray currentUserMatches = (JSONArray) likedRestaurants.get(0);
+
+        mutualMatches = new JSONArray();
+        for (int i = 0; i < otherUserMatches.length(); i++)
+        {
+            for (int j = 0; j < currentUserMatches.length(); j++)
+            {
+                JSONObject rest1 = (JSONObject) otherUserMatches.get(i);
+                JSONObject rest2 = (JSONObject) currentUserMatches.get(j);
+
+                if(rest1.get("id").equals(rest2.get("id")))
+                {
+                    mutualMatches.put(otherUserMatches.get(i));
+                }
+            }
+        }
+        Log.e(TAG, "findmutualmatches-- mutual matches" + mutualMatches.toString());
+        currFriendObject.put("mutualMatches", mutualMatches);
+        currFriendObject.saveInBackground(new SaveCallback() {
+            @Override
+            public void done(ParseException e) {
+                if (e == null) {
+                    Log.e("MatchActivity", "sucessfully saved mutual matches" );
+                }
+                else {
+                    Log.e("MatchActivity", "error saving mutual matches" );
+                }
+            }
+        });
+    }
+
+
 
 
 
