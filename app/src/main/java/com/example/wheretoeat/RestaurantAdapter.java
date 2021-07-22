@@ -88,6 +88,7 @@ public class RestaurantAdapter extends RecyclerView.Adapter<RestaurantAdapter.Vi
         RatingBar tvRestaurantRating;
         TextView tvRestaurantCategories;
         Button btnLikeRestaurant;
+        Button btnDislike;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -96,6 +97,21 @@ public class RestaurantAdapter extends RecyclerView.Adapter<RestaurantAdapter.Vi
             tvRestaurantRating = itemView.findViewById(R.id.tvRestaurantRating);
             btnLikeRestaurant = itemView.findViewById(R.id.btnLikeRestaurant);
             btnLikeRestaurant.setOnClickListener(this::onLikeClick);
+            btnDislike = itemView.findViewById(R.id.btnDislike);
+            btnDislike.setOnClickListener(this::onDislikeClick);
+
+            itemView.setOnTouchListener(new OnSwipeTouchListener(RestaurantAdapter.this.context) {
+                @Override
+                public void onSwipeRight() {
+                    super.onSwipeRight();
+                    onLikeClick(itemView);
+                }
+                @Override
+                public void onSwipeLeft() {
+                    super.onSwipeRight();
+                    onDislikeClick(itemView);
+                }
+            });
         }
 
         public JSONArray getLikedRestaurants() {
@@ -114,8 +130,21 @@ public class RestaurantAdapter extends RecyclerView.Adapter<RestaurantAdapter.Vi
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
+                Log.e("RestAdapter", "swiped right on: " + movie );
                 likedRestaurants.put(movie);
                 dtInterface.onSetValues(likedRestaurants);
+                restaurants.remove(position);
+                notifyDataSetChanged();
+                notifyItemRangeRemoved(position, restaurants.length());
+            }
+        }
+
+        public void onDislikeClick(View v)  {
+            // gets item position
+            int position = getAdapterPosition();
+            // make sure the position is valid, i.e. actually exists in the view
+            if (position != RecyclerView.NO_POSITION) {
+                // get the movie at the position, this won't work if the class is static
                 restaurants.remove(position);
                 notifyDataSetChanged();
                 notifyItemRangeRemoved(position, restaurants.length());
