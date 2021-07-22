@@ -91,28 +91,33 @@ public class ViewMatchesAdapter extends RecyclerView.Adapter<ViewMatchesAdapter.
             tvRestaurantCategories = itemView.findViewById(R.id.tvRestaurantCategories);
             tvRestaurantRating = itemView.findViewById(R.id.tvRestaurantRating);
             btnLikeRestaurant = itemView.findViewById(R.id.btnLikeRestaurant);
-//            btnLikeRestaurant.setOnClickListener(this::onLikeClick);
+            btnLikeRestaurant.setOnClickListener(this::onLikeClick);
         }
 
 
-//        public void onLikeClick(View v)  {
-//            // gets item position
-//            int position = getAdapterPosition();
-//            // make sure the position is valid, i.e. actually exists in the view
-//            if (position != RecyclerView.NO_POSITION) {
-//                // get the movie at the position, this won't work if the class is static
-//                JSONObject movie = null;
-//                try {
-//                    movie = (JSONObject) restaurants.get(position);
-//                } catch (JSONException e) {
-//                    e.printStackTrace();
-//                }
-//                likedRestaurants.put(movie);
-//                restaurants.remove(position);
-//                notifyDataSetChanged();
-//                notifyItemRangeRemoved(position, restaurants.length());
-//            }
-//        }
+        public void onLikeClick(View v)  {
+            // gets item position
+            int position = getAdapterPosition();
+            // make sure the position is valid, i.e. actually exists in the view
+            if (position != RecyclerView.NO_POSITION) {
+                // get the movie at the position, this won't work if the class is static
+                JSONObject restaurant = null;
+                try {
+                    restaurant = (JSONObject) restaurants.get(position);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+                Intent intent = new Intent(context, RestaurantDetailsActivity.class);
+                // serialize the movie using parceler, use its short name as a key
+                try {
+                    intent.putExtra("restaurantId", restaurant.getString("id"));
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+                // show the activity
+                context.startActivity(intent);
+            }
+        }
 
 
 

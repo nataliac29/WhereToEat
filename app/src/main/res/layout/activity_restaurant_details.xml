@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/android_act"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_alignParentStart="true"
+    android:layout_alignParentTop="true"
+    android:layout_marginStart="20dp"
+    android:layout_marginEnd="20dp"
+    android:layout_marginBottom="20dp"
+    android:background="@drawable/android_act"
+    android:padding="10dp">
+
+    <ImageView
+        android:id="@+id/ivPhoto"
+        android:layout_width="wrap_content"
+        android:layout_height="200dp"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="0dp"
+        android:layout_marginTop="0dp"
+        android:layout_marginEnd="0dp"
+        android:layout_marginBottom="10dp"
+        tools:srcCompat="@tools:sample/backgrounds/scenic" />
+
+    <TextView
+        android:id="@+id/tvNameDetails"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/ivPhoto"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginStart="4dp"
+        android:layout_marginEnd="0dp"
+        android:textAppearance="@style/TextAppearance.AppCompat.Display2"
+        tools:text="Floramos" />
+
+    <TextView
+        android:id="@+id/tvLink"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/tvNameDetails"
+        android:layout_marginTop="10dp"
+        android:linksClickable="true"
+        android:autoLink="web"
+        />
+
+    <RatingBar
+        android:id="@+id/tvRatingDetails"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/tvCategoriesDetails"
+        android:layout_alignParentStart="true"
+        android:layout_marginStart="0dp"
+        android:layout_marginTop="10dp"
+        android:isIndicator="true" />
+
+    <TextView
+        android:id="@+id/tvCategoriesDetails"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/tvLink"
+        android:layout_alignParentStart="true"
+        android:layout_marginTop="10dp"
+        tools:text="Mexican, American" />
+
+    <TextView
+        android:id="@+id/tvPhone"
+        android:layout_width="wrap_content"
+        android:layout_height="19dp"
+        android:layout_below="@+id/tvNameDetails"
+        android:layout_alignParentBottom="false"
+        android:layout_marginStart="14dp"
+        android:layout_marginTop="10dp"
+        android:layout_toEndOf="@+id/tvLink"
+        android:text="TextView" />
+
+    <TextView
+        android:id="@+id/tvAddress"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/tvRatingDetails"
+        android:layout_alignParentTop="false"
+        android:layout_alignParentEnd="false"
+        android:layout_alignParentBottom="false"
+        android:layout_centerHorizontal="false"
+        android:layout_marginTop="10dp"
+        android:layout_marginEnd="0dp"
+        android:layout_marginBottom="0dp"
+        android:text="TextView" />
+
+
+</RelativeLayout>

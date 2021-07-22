@@ -5,8 +5,10 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Address;
+import android.location.Criteria;
 import android.location.Geocoder;
 import android.location.Location;
+import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 
@@ -50,7 +52,7 @@ import okhttp3.Callback;
 import okhttp3.Response;
 
 
-public class AddFragment extends Fragment {
+public class AddFragment extends Fragment implements LocationListener{
     /*
     button listener
         update parse table
@@ -61,6 +63,14 @@ public class AddFragment extends Fragment {
     EditText etCode;
     ParseUser currentUser;
     ParseUser recipientUser;
+
+    //for location functionality
+    LocationManager lm;
+    Double latitude;
+    Double longitude;
+    Criteria criteria;
+    String bestProvider;
+
 
     public ArrayList<Restaurant> restaurants = new ArrayList<>();
 
@@ -103,6 +113,14 @@ public class AddFragment extends Fragment {
 
         });
 
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        if (lm != null) {
+            lm.removeUpdates(this);
+        }
     }
 
     Friends friend = new Friends();
@@ -187,16 +205,20 @@ public class AddFragment extends Fragment {
         else {
             Log.e(TAG, "in checklocationpermissions-- else");
             try {
-                getZipCode();
+                getLongLat();
             } catch (IOException e) {
+                Log.e(TAG, "check location permissions error", e);
                 e.printStackTrace();
+
             }
         }
     }
 
-    private String getZipCode() throws IOException {
+    private void getLongLat() throws IOException {
         Log.e(TAG, "in getzipcode");
-        LocationManager lm = (LocationManager) getActivity().getSystemService(Context.LOCATION_SERVICE);
+        lm = (LocationManager) getActivity().getSystemService(Context.LOCATION_SERVICE);
+        criteria = new Criteria();
+        bestProvider = String.valueOf(lm.getBestProvider(criteria, true));
         if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
@@ -205,11 +227,37 @@ public class AddFragment extends Fragment {
             //                                          int[] grantResults)
             // to handle the case where the user grants the permission. See the documentation
             // for ActivityCompat#requestPermissions for more details.
-            return null;
+            return;
         }
         Location location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-        double longitude = location.getLongitude();
-        double latitude = location.getLatitude();
+        if (location != null) {
+            longitude = location.getLongitude();
+            latitude = location.getLatitude();
+            getZipCode();
+        }
+        else {
+            lm.requestLocationUpdates(bestProvider, 1000, 0, this::onLocationChanged);
+        }
+
+    }
+    @Override
+    public void onLocationChanged(Location location) {
+        //Hey, a non null location! Sweet!
+
+        //remove location callback:
+        lm.removeUpdates(this);
+
+        //open the map:
+        latitude = location.getLatitude();
+        longitude = location.getLongitude();
+        Toast.makeText(getContext(), "latitude:" + latitude + " longitude:" + longitude, Toast.LENGTH_SHORT).show();
+        try {
+            getZipCode();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    private void getZipCode() throws IOException {
         Geocoder geocoder;
         List<Address> addresses;
         geocoder = new Geocoder(getContext(), Locale.getDefault());
@@ -217,10 +265,11 @@ public class AddFragment extends Fragment {
         addresses = geocoder.getFromLocation(latitude, longitude, 1); // Here 1 represent max location result to returned, by documents it recommended 1 to 5
 
         String postalCode = addresses.get(0).getPostalCode();
-        Log.e(TAG, "postalCode: " + postalCode);
+            Log.e(TAG, "postalCode: " + postalCode);
         getRestaurants(postalCode);
-        return postalCode;
     }
+
+
 
 
     // Register the permissions callback, which handles the user's response to the

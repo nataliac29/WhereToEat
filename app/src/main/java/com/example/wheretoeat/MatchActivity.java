@@ -179,8 +179,8 @@ public class MatchActivity extends AppCompatActivity implements DataTransferInte
                 if (e2 == null) {
                     for (ParseObject user : objects2) {
                         if (!(user.getObjectId().equals(currentUser.getObjectId()))) {
-                            Log.e(TAG, "got other user pt1" + otherUser.getObjectId());
                             otherUser = (ParseUser) user;
+                            Log.e(TAG, "got other user pt1" + otherUser.getObjectId());
                         } else {
                             currFriendObject.getRelation("initial_user").getQuery().findInBackground(new FindCallback<ParseObject>() {
                                 @Override

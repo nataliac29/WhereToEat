@@ -14,7 +14,8 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.WhereToEat">
-        <activity android:name=".MatchActivity"></activity>
+        <activity android:name=".RestaurantDetailsActivity"></activity>
+        <activity android:name=".MatchActivity" />
         <activity android:name=".ViewMatchesActivity" /> <!-- for parse -->
         <meta-data
             android:name="com.parse.SERVER_URL"

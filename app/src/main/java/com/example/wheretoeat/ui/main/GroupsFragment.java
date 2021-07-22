@@ -116,6 +116,8 @@ public class GroupsFragment extends Fragment {
         if (isLoggedIn) {
             SharedPreferences sharedPreferences = getContext().getSharedPreferences("FB_userId", Context.MODE_PRIVATE);
             String currentUserId = sharedPreferences.getString("facebook_user_id", null);
+
+            Log.e(TAG, "GROUP FRAGMENT SHARED PREF: " + currentUserId);
             ParseQuery<ParseUser> query = ParseUser.getQuery();
             query.whereEqualTo("objectId", currentUserId);
             // start an asynchronous call for posts

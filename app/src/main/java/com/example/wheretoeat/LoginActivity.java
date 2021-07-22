@@ -78,6 +78,48 @@ public class LoginActivity extends AppCompatActivity {
         AccessToken accessToken = AccessToken.getCurrentAccessToken();
         boolean isLoggedIn = accessToken != null && !accessToken.isExpired();
         if (isLoggedIn) {
+            SharedPreferences sharedPreferences = this.getSharedPreferences("FB_userId", Context.MODE_PRIVATE);
+            String currentUserId = sharedPreferences.getString("facebook_user_id", null);
+            if (currentUserId == null) {
+                GraphRequest request = GraphRequest.newMeRequest(
+                        AccessToken.getCurrentAccessToken(),
+                        new GraphRequest.GraphJSONObjectCallback() {
+                            @Override
+                            public void onCompleted(JSONObject object, GraphResponse response) {
+                                Log.e(TAG, "here pt2");
+                                JSONObject json = response.getJSONObject();
+                                if (json != null) {
+                                    String username = null;
+                                    try {
+                                        username = json.getString("email");
+                                    } catch (JSONException e) {
+                                        e.printStackTrace();
+                                    }
+                                    // check if user has signed in before
+                                    ParseQuery<ParseUser> query = ParseUser.getQuery();
+                                    query.whereEqualTo("username", username);
+                                    // start an asynchronous call for posts
+                                    query.findInBackground(new FindCallback<ParseUser>() {
+                                        @Override
+                                        public void done(List<ParseUser> objects, ParseException e) {
+                                            if (objects.size() == 0) {
+                                                // error, show error text
+                                                Log.e(TAG, "error auto logging in");
+                                                // Add user to Parse user table, using email as username
+                                            } else {
+                                                // if user has already signed up, store id in Shared Preferences
+                                                addIdSharePref(objects.get(0).getObjectId());
+                                            }
+                                        }
+                                    });
+                                }
+                            }
+                        });
+                Bundle parameters = new Bundle();
+                parameters.putString("fields", "email");
+                request.setParameters(parameters);
+                request.executeAsync();
+            }
             goMainActivity();
         }
 
@@ -169,7 +211,7 @@ public class LoginActivity extends AppCompatActivity {
                     Log.e(TAG, "Issue with login", e);
                     return;
                 }
-                ///Navigate to main activity if user has signed in successfully
+                // Navigate to main activity if user has signed in successfully
                 goMainActivity();
                 Toast.makeText(LoginActivity.this, "Success!", Toast.LENGTH_SHORT);
             }
