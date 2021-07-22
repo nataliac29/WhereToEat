@@ -53,6 +53,22 @@ public class YelpService {
         call.enqueue(callback);
 
     }
+    public static void getRestaurantReviews(String id, Callback callback) {
+
+        OkHttpClient client = new OkHttpClient.Builder()
+                .build();
+
+        String URL = "https://api.yelp.com/v3/businesses/" + id + "/reviews";
+
+        Request request= new Request.Builder()
+                .url(URL)
+                .header("Authorization", BuildConfig.YELP_API_KEY)
+                .build();
+
+        Call call = client.newCall(request);
+        call.enqueue(callback);
+
+    }
 
 
     public ArrayList<Restaurant> processResults(Response response) {
