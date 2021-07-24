@@ -1,4 +1,4 @@
-package com.example.wheretoeat;
+package com.example.wheretoeat.modals;
 
 import android.util.Log;
 
@@ -78,6 +78,8 @@ public class Restaurant {
             obj.put("website", this.website);
             obj.put("rating", this.rating);
             obj.put("categories", this.categories);
+            obj.put("imageUrl", this.imageUrl);
+
         } catch (JSONException e) {
             Log.e("Restaurant class", "error getting jsonObject", e);
         }

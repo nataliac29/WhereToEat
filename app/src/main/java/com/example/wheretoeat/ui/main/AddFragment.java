@@ -27,9 +27,9 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import com.example.wheretoeat.Friends;
+import com.example.wheretoeat.modals.Friends;
 import com.example.wheretoeat.R;
-import com.example.wheretoeat.Restaurant;
+import com.example.wheretoeat.modals.Restaurant;
 import com.example.wheretoeat.YelpService;
 import com.facebook.AccessToken;
 import com.parse.FindCallback;
@@ -85,6 +85,7 @@ public class AddFragment extends Fragment implements LocationListener{
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getCurrentUser();
 
     }
 
@@ -108,9 +109,8 @@ public class AddFragment extends Fragment implements LocationListener{
             @Override
             public void onClick(View v) {
                 String recipientUsername = etCode.getText().toString();
-                addRecipientUser(recipientUsername);
+                checkFriendExists(recipientUsername);
             }
-
         });
 
     }
@@ -123,62 +123,96 @@ public class AddFragment extends Fragment implements LocationListener{
         }
     }
 
-    Friends friend = new Friends();
 
-    private void addRecipientUser(String recipientUsername) {
-        ParseQuery<ParseUser> query = ParseUser.getQuery();
-        query.whereEqualTo("username", recipientUsername);
-        query.findInBackground(new FindCallback<ParseUser>() {
+    int resultSize;
+
+    // returns true if there is already a connection between the users, false if not
+    private void checkFriendExists(String recipientUsername) {
+
+
+//        Attempt at inner queries to avoid adding another query to get recipient user, did not work
+//        ParseQuery<ParseObject> innerQuery = ParseQuery.getQuery("User");
+//        innerQuery.whereEqualTo("username", recipientUsername);
+//
+//        ParseQuery<ParseObject> checkRecipientQuery = ParseQuery.getQuery("Friends");
+//        checkRecipientQuery.whereMatchesQuery("recipient_user", innerQuery);
+//        checkRecipientQuery.whereEqualTo("initial_user", recipientUsername);
+//
+//
+//        ParseQuery<ParseObject> checkInitialQuery = ParseQuery.getQuery("Friends");
+//        checkInitialQuery.whereMatchesQuery("initial_user", innerQuery);
+//        checkInitialQuery.whereEqualTo("recipient_user", recipientUsername);
+        Log.e(TAG, "logged in user: " + currentUser.getObjectId());
+        // query to get recipient user
+        ParseQuery<ParseUser> getRecipientQuery = ParseUser.getQuery();
+        getRecipientQuery.whereEqualTo("username", recipientUsername);
+
+        // query to get relationship if one exists
+        ParseQuery<ParseObject> checkRecipientQuery = ParseQuery.getQuery("Friends");
+        checkRecipientQuery.whereEqualTo("recipient_user", currentUser);
+
+
+        ParseQuery<ParseObject> checkInitialQuery = ParseQuery.getQuery("Friends");
+        checkInitialQuery.whereEqualTo("initial_user", currentUser);
+
+
+        List<ParseQuery<ParseObject>> queries = new ArrayList<ParseQuery<ParseObject>>();
+        queries.add(checkRecipientQuery);
+        queries.add(checkInitialQuery);
+
+        ParseQuery<ParseObject> mainQuery = ParseQuery.or(queries);
+
+        // get recipient first, then run second query to see if it returns row
+        getRecipientQuery.findInBackground(new FindCallback<ParseUser>() {
             @Override
             public void done(List<ParseUser> objects, ParseException e) {
                 if (e == null) {
-                    // The query was successful, returns the users that matches
-                    // the criteria.
+                    Log.e(TAG, "getting recipient user" + objects.toString());
                     recipientUser = objects.get(0);
-                    ParseRelation<ParseObject> relation = friend.getRelation("recipient_user");
-                    relation.add(recipientUser);
-                    // after adding recipient user relation, add initial user relation
-                    addInitUser();
 
-                } else {
-                    // Something went wrong.
-                    Toast.makeText(getContext(), e.getMessage(), Toast.LENGTH_SHORT).show();
+                    checkRecipientQuery.whereEqualTo("initial_user", recipientUser);
+                    checkInitialQuery.whereEqualTo("recipient_user", recipientUser);
+
+                    mainQuery.findInBackground(new FindCallback<ParseObject>() {
+                        @Override
+                        public void done(List<ParseObject> objects, ParseException e1) {
+                            if (e == null) {
+                                Log.e(TAG, "result of check friend exists: " + objects.toString());
+                                resultSize = objects.size();
+                                // no relationship already exists, continue with creating row
+                                if (resultSize == 0) {
+                                    addRecipientUser(recipientUsername);
+                                }
+                                else {
+                                    Toast.makeText(getContext(), "You have already added this user", Toast.LENGTH_SHORT).show();
+                                }
+                            }
+                        }
+                    });
+                }
+                else {
+                    Log.e(TAG, "error getting recipient user", e);
                 }
             }
-
         });
 
     }
 
+
+    Friends friend = new Friends();
+
+    private void addRecipientUser(String recipientUsername) {
+        ParseRelation<ParseObject> relation = friend.getRelation("recipient_user");
+        relation.add(recipientUser);
+        // after adding recipient user relation, add initial user relation
+        addInitUser();
+    }
+
     private void addInitUser() {
-        if (ParseUser.getCurrentUser() != null) {
-            currentUser = ParseUser.getCurrentUser();
-            ParseRelation<ParseObject> relation = friend.getRelation("initial_user");
-            relation.add(currentUser);
-            // after relations added, save row to DB in background thread
-            saveFriend();
-        } else {
-            AccessToken accessToken = AccessToken.getCurrentAccessToken();
-            boolean isLoggedIn = accessToken != null && !accessToken.isExpired();
-            if (isLoggedIn) {
-                SharedPreferences sharedPreferences = getContext().getSharedPreferences("FB_userId", Context.MODE_PRIVATE);
-                String currentUserId = sharedPreferences.getString("facebook_user_id", null);
-                ParseQuery<ParseUser> query = ParseUser.getQuery();
-                query.whereEqualTo("objectId", currentUserId);
-                // start an asynchronous call for posts
-                query.findInBackground((users, e) -> {
-                    if (e == null) {
-                        currentUser = users.get(0);
-                        ParseRelation<ParseObject> relation = friend.getRelation("initial_user");
-                        relation.add(currentUser);
-                        // after relations added, save row to DB in background thread
-                        saveFriend();
-                    } else {
-                        Log.e(TAG, "Error getting Parse user" + e.getMessage());
-                    }
-                });
-            }
-        }
+        ParseRelation<ParseObject> relation = friend.getRelation("initial_user");
+        relation.add(currentUser);
+        // after relations added, save row to DB in background thread
+        saveFriend();
     }
 
     private void saveFriend() {
@@ -354,5 +388,34 @@ public class AddFragment extends Fragment implements LocationListener{
             }
         });
           }
+
+
+
+    private void getCurrentUser() {
+        if (ParseUser.getCurrentUser() != null) {
+            currentUser = ParseUser.getCurrentUser();
+        } else {
+            AccessToken accessToken = AccessToken.getCurrentAccessToken();
+            boolean isLoggedIn = accessToken != null && !accessToken.isExpired();
+            if (isLoggedIn) {
+                SharedPreferences sharedPreferences = getContext().getSharedPreferences("FB_userId", Context.MODE_PRIVATE);
+                String currentUserId = sharedPreferences.getString("facebook_user_id", null);
+                ParseQuery<ParseUser> query = ParseUser.getQuery();
+                query.whereEqualTo("objectId", currentUserId);
+                // start an asynchronous call for posts
+                query.findInBackground(new FindCallback<ParseUser>() {
+                    @Override
+                    public void done(List<ParseUser> objects, ParseException e) {
+                        if (e == null) {
+                            currentUser = objects.get(0);
+                        } else {
+                            Log.e(TAG, "Error getting Parse user" + e.getMessage());
+                        }
+
+                    }
+                });
+            }
+        }
+    }
 
     }

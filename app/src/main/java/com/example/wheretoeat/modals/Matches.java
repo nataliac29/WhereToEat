@@ -1,4 +1,4 @@
-package com.example.wheretoeat;
+package com.example.wheretoeat.modals;
 
 import com.parse.ParseClassName;
 import com.parse.ParseFile;

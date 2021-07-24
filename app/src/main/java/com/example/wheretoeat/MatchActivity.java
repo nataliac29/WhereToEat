@@ -1,21 +1,23 @@
 package com.example.wheretoeat;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
-import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
+import com.daprlabs.cardstack.SwipeDeck;
+import com.example.wheretoeat.adapters.RestaurantAdapter;
+import com.example.wheretoeat.modals.Friends;
+import com.example.wheretoeat.modals.Matches;
 import com.facebook.AccessToken;
 import com.parse.FindCallback;
-import com.parse.Parse;
+import com.parse.GetCallback;
 import com.parse.ParseException;
 import com.parse.ParseObject;
 import com.parse.ParseQuery;
@@ -26,12 +28,10 @@ import com.parse.SaveCallback;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.parceler.Parcels;
 
-import java.util.ArrayList;
 import java.util.List;
 
-public class MatchActivity extends AppCompatActivity implements DataTransferInterface {
+public class MatchActivity extends AppCompatActivity {
 
     private static final String TAG = "MatchActivity";
 
@@ -45,59 +45,115 @@ public class MatchActivity extends AppCompatActivity implements DataTransferInte
     private Button btnDoneMatching;
     private ParseUser otherUser;
 
+    private SwipeDeck cardStack;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_match);
 
+        cardStack = findViewById(R.id.swipe_deck);
 
-        RecyclerView rvMovies = findViewById(R.id.rvRestaurants);
-        //Create the adapter
         restaurants = new JSONArray();
+
         currFriend = getIntent().getStringExtra("friendGroup");
-        RestaurantAdapter movieAdapter = new RestaurantAdapter(MatchActivity.this, restaurants, currFriend, this::onSetValues );
 
-        // set the adapter on the recycler view
-        rvMovies.setAdapter(movieAdapter);
-        //Set a layout Manager on the recycler view
-        rvMovies.setLayoutManager((new LinearLayoutManager(this)));
-
-        likedRestaurants = new JSONArray();
-
-        btnDoneMatching = findViewById(R.id.btnDoneMatching);
-
-        Log.d("MatchActivity", String.format("Showing details for '%s'", currFriend));
 
         ParseQuery<ParseObject> query = ParseQuery.getQuery("Friends");
         Log.e("MatchActivity", "in update restaurants");
         // Retrieve the object by id
-        query.getInBackground(currFriend, (object, e) -> {
-            if (e == null) {
-                Log.e("MatchActivity", object.getJSONArray("restaurants").toString());
-                for (int i=0; i <  object.getJSONArray("restaurants").length(); i++) {
-                    try {
-                        restaurants.put(object.getJSONArray("restaurants").get(i));
-                    } catch (JSONException jsonException) {
-                        jsonException.printStackTrace();
+        query.getInBackground(currFriend, new GetCallback<ParseObject>() {
+            @Override
+            public void done(ParseObject object, ParseException e) {
+                if (e == null) {
+//                    Log.e("MatchActivity", object.getJSONArray("restaurants").toString());
+                    for (int i = 0; i < object.getJSONArray("restaurants").length(); i++) {
+                        try {
+                            restaurants.put(object.getJSONArray("restaurants").get(i));
+                        } catch (JSONException jsonException) {
+                            jsonException.printStackTrace();
+                        }
                     }
-                }
-                movieAdapter.notifyDataSetChanged();
+                    setAdapter();
 
-            } else {
-                // something went wrong
-                Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
+                } else {
+                    // something went wrong
+                    Toast.makeText(MatchActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
+                }
             }
         });
+    }
 
-        btnDoneMatching.setOnClickListener(new View.OnClickListener() {
+    private void setAdapter() {
+        // add to this array as user likes restaurants
+        likedRestaurants = new JSONArray();
+
+        Log.e(TAG, "restaurants in set adapter" + restaurants.toString());
+
+        RestaurantAdapter restaurantAdapter = new RestaurantAdapter(MatchActivity.this, restaurants);
+
+        cardStack.setAdapter(restaurantAdapter);
+
+        // on below line we are setting event callback to our card stack.
+        cardStack.setEventCallback(new SwipeDeck.SwipeEventCallback() {
             @Override
-            public void onClick(View v) {
+            public void cardSwipedLeft(int position) {
+                // on card swipe left we are displaying a toast message.
+                Toast toast = Toast.makeText(MatchActivity.this, "Disliked!", Toast.LENGTH_SHORT);
+                toast.show();
+                Handler handler = new Handler();
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        toast.cancel();
+                    }
+                }, 1000);
+            }
+
+            @Override
+            public void cardSwipedRight(int position) {
+                // on card swiped to right we are displaying a toast message.
+                Toast toast = Toast.makeText(MatchActivity.this, "Liked!", Toast.LENGTH_SHORT);
+                toast.show();
+                Handler handler = new Handler();
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        toast.cancel();
+                    }
+                }, 1000);
+                try {
+                    likedRestaurants.put(restaurants.get(position));
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void cardsDepleted() {
+                // this method is called when no card is present
+                Toast.makeText(MatchActivity.this, "Done!", Toast.LENGTH_SHORT).show();
+                Log.e(TAG, "CARDS DONE");
                 Matches match = new Matches();
                 addUser(match);
             }
-        });
 
+            @Override
+            public void cardActionDown() {
+                // this method is called when card is swipped down.
+                Log.i("TAG", "CARDS MOVED DOWN");
+
+            }
+
+            @Override
+            public void cardActionUp() {
+                // this method is called when card is moved up.
+                Log.i("TAG", "CARDS MOVED UP");
+            }
+        });
     }
+
 
     private void addUser(Matches match) {
         if (ParseUser.getCurrentUser() != null) {
@@ -153,15 +209,14 @@ public class MatchActivity extends AppCompatActivity implements DataTransferInte
     }
 
     private void saveMatches(Matches match) throws JSONException {
-        match.put("matches", likedRestaurants.get(0));
+        match.put("matches", likedRestaurants);
         match.saveInBackground(new SaveCallback() {
             @Override
             public void done(ParseException e) {
                 if (e == null) {
                     Log.e("MatchActivity", "success saving matches");
                     findOtherUser();
-                }
-                else {
+                } else {
                     Log.e("MatchActivity", "Matches save was not successful", e);
                 }
             }
@@ -207,52 +262,48 @@ public class MatchActivity extends AppCompatActivity implements DataTransferInte
     }
 
 
- private void checkMatchingDone() {
-     Log.e(TAG, "in checkmatchingdone");
+    private void checkMatchingDone() {
+        Log.e(TAG, "in checkmatchingdone");
 
-     ParseQuery<ParseObject> checkifMatched = ParseQuery.getQuery("Matches");
-     checkifMatched.whereEqualTo("user", otherUser);
-     checkifMatched.whereEqualTo("group_id", currFriendObject);
+        ParseQuery<ParseObject> checkifMatched = ParseQuery.getQuery("Matches");
+        checkifMatched.whereEqualTo("user", otherUser);
+        checkifMatched.whereEqualTo("group_id", currFriendObject);
 
-     Log.e(TAG, "in checkMatchingDone, before query" );
+        Log.e(TAG, "in checkMatchingDone, before query");
 
-     checkifMatched.findInBackground(new FindCallback<ParseObject>() {
-         @Override
-         public void done(List<ParseObject> objects, ParseException e) {
-             if (e == null) {
-                 Log.e(TAG, "in checkMatchingDone, e not null" );
-                 // if other user has submitted their matches
-                 if (objects.size() != 0) {
-
-                     JSONArray otherUserMatches = objects.get(0).getJSONArray("matches");
-                     Log.e(TAG, "in checkMatchingDone, found other user matches" + otherUserMatches.toString());
-                     try {
-                         findMutualMatches(otherUserMatches);
-                     } catch (JSONException jsonException) {
-                         jsonException.printStackTrace();
-                     }
-                 }
-             } else {
-                 Log.e("MatchActivity", "error checking if matching done", e);
-             }
-         }
-     });
- }
+        checkifMatched.findInBackground(new FindCallback<ParseObject>() {
+            @Override
+            public void done(List<ParseObject> objects, ParseException e) {
+                if (e == null) {
+                    Log.e(TAG, "in checkMatchingDone, e not null");
+                    // if other user has submitted their matches
+                    if (objects.size() != 0) {
+                        JSONArray otherUserMatches = objects.get(0).getJSONArray("matches");
+                        Log.e(TAG, "in checkMatchingDone, found other user matches" + otherUserMatches.toString());
+                        try {
+                            findMutualMatches(otherUserMatches);
+                        } catch (JSONException jsonException) {
+                            jsonException.printStackTrace();
+                        }
+                    }
+                } else {
+                    Log.e("MatchActivity", "error checking if matching done", e);
+                }
+            }
+        });
+    }
 
     private void findMutualMatches(JSONArray otherUserMatches) throws JSONException {
         Log.e(TAG, "in findMutualMatches");
-        JSONArray currentUserMatches = (JSONArray) likedRestaurants.get(0);
+        JSONArray currentUserMatches = likedRestaurants;
 
         mutualMatches = new JSONArray();
-        for (int i = 0; i < otherUserMatches.length(); i++)
-        {
-            for (int j = 0; j < currentUserMatches.length(); j++)
-            {
+        for (int i = 0; i < otherUserMatches.length(); i++) {
+            for (int j = 0; j < currentUserMatches.length(); j++) {
                 JSONObject rest1 = (JSONObject) otherUserMatches.get(i);
                 JSONObject rest2 = (JSONObject) currentUserMatches.get(j);
 
-                if(rest1.get("id").equals(rest2.get("id")))
-                {
+                if (rest1.get("id").equals(rest2.get("id"))) {
                     mutualMatches.put(otherUserMatches.get(i));
                 }
             }
@@ -263,26 +314,11 @@ public class MatchActivity extends AppCompatActivity implements DataTransferInte
             @Override
             public void done(ParseException e) {
                 if (e == null) {
-                    Log.e("MatchActivity", "sucessfully saved mutual matches" );
-                }
-                else {
-                    Log.e("MatchActivity", "error saving mutual matches" );
+                    Log.e("MatchActivity", "sucessfully saved mutual matches");
+                } else {
+                    Log.e("MatchActivity", "error saving mutual matches");
                 }
             }
         });
     }
-
-
-
-
-
-    @Override
-    public void onSetValues(JSONArray al) {
-        likedRestaurants.put(al);
-        Log.e("MatchActivity", "value of liked restaurants" + likedRestaurants.toString());
-    }
-
-
-
-
 }

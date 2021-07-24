@@ -1,33 +1,31 @@
-package com.example.wheretoeat;
+package com.example.wheretoeat.adapters;
 
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.os.Parcelable;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.bumptech.glide.Glide;
+import com.example.wheretoeat.modals.Friends;
+import com.example.wheretoeat.MatchActivity;
+import com.example.wheretoeat.R;
+import com.example.wheretoeat.ViewMatchesActivity;
 import com.facebook.AccessToken;
 import com.parse.FindCallback;
 import com.parse.ParseException;
-import com.parse.ParseFile;
 import com.parse.ParseObject;
 import com.parse.ParseQuery;
 import com.parse.ParseUser;
 
 import org.json.JSONArray;
-import org.parceler.Parcels;
 
 import java.util.ArrayList;
 import java.util.List;

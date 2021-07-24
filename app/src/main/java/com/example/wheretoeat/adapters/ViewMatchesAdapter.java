@@ -1,9 +1,8 @@
-package com.example.wheretoeat;
+package com.example.wheretoeat.adapters;
 
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.Configuration;
-import android.util.Log;
+import android.media.Image;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,27 +10,20 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.RatingBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.view.menu.MenuView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
-import com.parse.FindCallback;
-import com.parse.ParseException;
-import com.parse.ParseObject;
-import com.parse.ParseQuery;
-import com.parse.SaveCallback;
+import com.example.wheretoeat.R;
+import com.example.wheretoeat.RestaurantDetailsActivity;
 
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.parceler.Parcels;
-import org.w3c.dom.Text;
 
-import java.util.List;
+import jp.wasabeef.glide.transformations.RoundedCornersTransformation;
 
 public class ViewMatchesAdapter extends RecyclerView.Adapter<ViewMatchesAdapter.ViewHolder>  {
     Context context;
@@ -84,6 +76,9 @@ public class ViewMatchesAdapter extends RecyclerView.Adapter<ViewMatchesAdapter.
         RatingBar tvRestaurantRating;
         TextView tvRestaurantCategories;
         Button btnLikeRestaurant;
+        ImageView ivCover;
+        String imageUrl;
+
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -91,6 +86,7 @@ public class ViewMatchesAdapter extends RecyclerView.Adapter<ViewMatchesAdapter.
             tvRestaurantCategories = itemView.findViewById(R.id.tvRestaurantCategories);
             tvRestaurantRating = itemView.findViewById(R.id.tvRestaurantRating);
             btnLikeRestaurant = itemView.findViewById(R.id.btnLikeRestaurant);
+            ivCover = itemView.findViewById(R.id.ivCover);
             btnLikeRestaurant.setOnClickListener(this::onLikeClick);
         }
 
@@ -127,6 +123,27 @@ public class ViewMatchesAdapter extends RecyclerView.Adapter<ViewMatchesAdapter.
             double rating = restaurant.getDouble("rating") / 2.0f;
             tvRestaurantRating.setRating((float) rating);
             btnLikeRestaurant.setText("View more details");
+
+
+            ivCover = itemView.findViewById(R.id.ivCover);
+
+
+            int radius = 10; // corner radius, higher value = more rounded
+            int margin = 0;
+
+            try {
+                imageUrl = restaurant.getString("imageUrl");
+            } catch (JSONException e) {
+                imageUrl = null;
+                e.printStackTrace();
+            }
+
+            Glide.with(context)
+                    .load(imageUrl)
+                    .centerInside() // scale image to fill the entire ImageView
+                    .transform(new RoundedCornersTransformation(radius, margin))
+                    .into(ivCover);
+
 
         }
     }

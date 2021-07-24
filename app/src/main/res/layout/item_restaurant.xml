@@ -1,24 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/android_act"
-    android:layout_width="wrap_content"
+    android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_alignParentStart="true"
-    android:layout_alignParentTop="true"
-    android:layout_marginStart="20dp"
-    android:layout_marginEnd="20dp"
-    android:layout_marginBottom="20dp"
-    android:background="@drawable/android_act"
-    android:elevation="4dp">
+    android:layout_margin="5dp"
+    android:elevation="8dp"
+    app:cardCornerRadius="4dp">
+
+    <LinearLayout
+        android:id="@+id/detailsLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+    <ImageView
+        android:id="@+id/ivCover"
+        android:layout_width="wrap_content"
+        android:layout_height="200dp"
+        android:layout_marginBottom="20dp"
+        tools:srcCompat="@tools:sample/backgrounds/scenic" />
+
 
     <TextView
         android:id="@+id/tvRestaurantName"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentEnd="true"
         android:layout_marginStart="4dp"
         android:layout_marginTop="0dp"
         android:layout_marginEnd="-1dp"
@@ -29,8 +37,6 @@
         android:id="@+id/tvRestaurantRating"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/tvRestaurantCategories"
-        android:layout_alignParentStart="true"
         android:layout_marginStart="0dp"
         android:layout_marginTop="10dp"
         android:isIndicator="true" />
@@ -39,8 +45,6 @@
         android:id="@+id/tvRestaurantCategories"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/tvRestaurantName"
-        android:layout_alignParentStart="true"
         android:layout_marginTop="10dp"
         tools:text="Mexican, American" />
 
@@ -48,27 +52,11 @@
         android:id="@+id/btnLikeRestaurant"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/tvRestaurantRating"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentEnd="false"
-        android:layout_alignParentBottom="false"
         android:layout_marginStart="20dp"
         android:layout_marginTop="18dp"
         android:layout_marginEnd="20dp"
         android:layout_marginBottom="2dp" />
 
-    <Button
-        android:id="@+id/btnDislike"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/tvRestaurantRating"
-        android:layout_alignParentEnd="true"
-        android:layout_marginTop="18dp"
-        android:layout_marginEnd="10dp"
-        android:background="@android:color/transparent"
-        android:backgroundTint="@android:color/transparent"
-        android:text="Clear"
-        android:textAllCaps="false"
-        android:textColor="@color/grey" />
+    </LinearLayout>
+</androidx.cardview.widget.CardView>
 
-</RelativeLayout>

@@ -6,9 +6,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
 import android.widget.Toast;
 
+import com.example.wheretoeat.adapters.ViewMatchesAdapter;
 import com.parse.ParseObject;
 import com.parse.ParseQuery;
 

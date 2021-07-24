@@ -1,6 +1,9 @@
 package com.example.wheretoeat;
 
 import android.app.Application;
+
+import com.example.wheretoeat.modals.Friends;
+import com.example.wheretoeat.modals.Matches;
 import com.parse.Parse;
 import com.parse.ParseObject;
 

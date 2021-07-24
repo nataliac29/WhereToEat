@@ -1,7 +1,6 @@
 package com.example.wheretoeat.ui.main;
 
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 
@@ -18,28 +17,17 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
-import com.example.wheretoeat.Friends;
-import com.example.wheretoeat.FriendsAdapter;
-import com.example.wheretoeat.LoginActivity;
+import com.example.wheretoeat.adapters.FriendsAdapter;
 import com.example.wheretoeat.R;
 import com.facebook.AccessToken;
-import com.facebook.Profile;
 import com.parse.FindCallback;
-import com.parse.GetCallback;
-import com.parse.Parse;
 import com.parse.ParseException;
 import com.parse.ParseObject;
 import com.parse.ParseQuery;
-import com.parse.ParseRelation;
 import com.parse.ParseUser;
 
-import org.parceler.Parcels;
-
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-
-import static android.app.Activity.RESULT_OK;
 
 public class GroupsFragment extends Fragment {
 
@@ -149,9 +137,18 @@ public class GroupsFragment extends Fragment {
             @Override
             public void done(List<ParseObject> objects, ParseException e) {
                 if (e == null) {
+                    if (objects.size() == 0) {
+                        Toast.makeText(getContext(), "Click the plus tab to add friends!", Toast.LENGTH_SHORT).show();
+                        adapter.clear();
+                        adapter.notifyDataSetChanged();
+                        swipeContainer.setRefreshing(false);
+                        return;
+                    }
+
                     // commentList now contains the last ten comments, and the "post"
                     // field has been populated. For example:
                     for (ParseObject friend : objects) {
+
                         // This does not require a network access.
                         friend.getRelation("recipient_user").getQuery().findInBackground(new FindCallback<ParseObject>() {
                             @Override

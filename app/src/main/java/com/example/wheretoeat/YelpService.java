@@ -1,5 +1,7 @@
 package com.example.wheretoeat;
 
+import com.example.wheretoeat.modals.Restaurant;
+
 import okhttp3.Callback;
 
 import org.json.JSONArray;
@@ -10,7 +12,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 import okhttp3.Call;
-import okhttp3.Callback;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
