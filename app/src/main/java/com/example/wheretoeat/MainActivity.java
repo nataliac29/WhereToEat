@@ -1,6 +1,8 @@
 package com.example.wheretoeat;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 
 import com.facebook.AccessToken;
@@ -54,6 +56,7 @@ public class MainActivity extends AppCompatActivity {
                 Log.e("Main_Activity", "access token" + accessToken);
                 boolean isLoggedIn = accessToken != null && !accessToken.isExpired();
                 if (isLoggedIn) {
+                    removeIdSharePref();
                     LoginManager.getInstance().logOut();
                     Intent i = new Intent(MainActivity.this, LoginActivity.class);
                     i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP); // this makes sure the Back button won't work
@@ -62,5 +65,13 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+
+    private void removeIdSharePref() {
+        SharedPreferences sharedPreferences = getSharedPreferences("FB_userId", Context.MODE_PRIVATE);
+
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putString("facebook_user_id", null);
+        editor.apply();
     }
 }
