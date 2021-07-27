@@ -13,50 +13,66 @@
         android:id="@+id/detailsLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:padding="10dp">
 
-    <ImageView
-        android:id="@+id/ivCover"
-        android:layout_width="wrap_content"
-        android:layout_height="200dp"
-        android:layout_marginBottom="20dp"
-        tools:srcCompat="@tools:sample/backgrounds/scenic" />
+        <ImageView
+            android:id="@+id/ivCover"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:layout_marginBottom="20dp"
+            app:srcCompat="@drawable/ic_launcher_background" />
 
 
-    <TextView
-        android:id="@+id/tvRestaurantName"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="4dp"
-        android:layout_marginTop="0dp"
-        android:layout_marginEnd="-1dp"
-        android:textAppearance="@style/TextAppearance.AppCompat.Display2"
-        tools:text="Floramos" />
+        <TextView
+            android:id="@+id/tvRestaurantName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="0dp"
+            android:textAppearance="@style/TextAppearance.AppCompat.Display1"
+            tools:text="Floramos" />
 
-    <RatingBar
-        android:id="@+id/tvRestaurantRating"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="0dp"
-        android:layout_marginTop="10dp"
-        android:isIndicator="true" />
+        <RatingBar
+            android:id="@+id/tvRestaurantRating"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="0dp"
+            android:layout_marginTop="10dp"
+            android:isIndicator="true" />
 
-    <TextView
-        android:id="@+id/tvRestaurantCategories"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        tools:text="Mexican, American" />
+        <TextView
+            android:id="@+id/tvRestaurantCategories"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            tools:text="Mexican, American" />
 
-    <Button
-        android:id="@+id/btnLikeRestaurant"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="20dp"
-        android:layout_marginTop="18dp"
-        android:layout_marginEnd="20dp"
-        android:layout_marginBottom="2dp" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:baselineAligned="false"
+            android:orientation="horizontal"
+            android:padding="10dp"
+            >
+
+            <Button
+                android:id="@+id/btnLikeRestaurant"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="20dp"
+                android:layout_weight="1" />
+
+            <Button
+                android:id="@+id/btnDislike"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:layout_weight="1"
+                android:background="@android:color/transparent"
+                android:textColor="@color/grey" />
+        </LinearLayout>
 
     </LinearLayout>
+
 </androidx.cardview.widget.CardView>
 

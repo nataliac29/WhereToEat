@@ -8,6 +8,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
@@ -31,7 +32,7 @@ import org.json.JSONObject;
 
 import java.util.List;
 
-public class MatchActivity extends AppCompatActivity {
+public class MatchActivity extends AppCompatActivity implements RestaurantAdapter.OnClickListener {
 
     private static final String TAG = "MatchActivity";
 
@@ -54,6 +55,7 @@ public class MatchActivity extends AppCompatActivity {
         setContentView(R.layout.activity_match);
 
         cardStack = findViewById(R.id.swipe_deck);
+
 
         restaurants = new JSONArray();
 
@@ -89,11 +91,12 @@ public class MatchActivity extends AppCompatActivity {
         // add to this array as user likes restaurants
         likedRestaurants = new JSONArray();
 
-        Log.e(TAG, "restaurants in set adapter" + restaurants.toString());
+//        Log.e(TAG, "restaurants in set adapter" + restaurants.toString());
 
-        RestaurantAdapter restaurantAdapter = new RestaurantAdapter(MatchActivity.this, restaurants);
+        RestaurantAdapter restaurantAdapter = new RestaurantAdapter(MatchActivity.this, restaurants, this);
 
         cardStack.setAdapter(restaurantAdapter);
+
 
         // on below line we are setting event callback to our card stack.
         cardStack.setEventCallback(new SwipeDeck.SwipeEventCallback() {
@@ -321,4 +324,15 @@ public class MatchActivity extends AppCompatActivity {
             }
         });
     }
+// trigger cards to swipe when the user clicks the button instead of actually swiping
+        @Override
+        public void onRestaurantLike() {
+            cardStack.swipeTopCardRight(100);
+        }
+
+        @Override
+        public void onRestaurantDislike() {
+            cardStack.swipeTopCardLeft(100);
+        }
+
 }
