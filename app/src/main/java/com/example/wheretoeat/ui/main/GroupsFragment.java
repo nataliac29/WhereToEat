@@ -53,6 +53,7 @@ public class GroupsFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
+        getCurrentUser();
         return inflater.inflate(R.layout.fragment_groups, container, false);
 
     }
@@ -94,29 +95,6 @@ public class GroupsFragment extends Fragment {
     private void queryFriends() {
 
         ArrayList<ParseUser> allTempUsers = new ArrayList<>();
-        // get current user id
-
-        if (ParseUser.getCurrentUser() != null) {
-            currentUser = ParseUser.getCurrentUser();
-        }
-        AccessToken accessToken = AccessToken.getCurrentAccessToken();
-        boolean isLoggedIn = accessToken != null && !accessToken.isExpired();
-        if (isLoggedIn) {
-            SharedPreferences sharedPreferences = getContext().getSharedPreferences("FB_userId", Context.MODE_PRIVATE);
-            String currentUserId = sharedPreferences.getString("facebook_user_id", null);
-
-            Log.e(TAG, "GROUP FRAGMENT SHARED PREF: " + currentUserId);
-            ParseQuery<ParseUser> query = ParseUser.getQuery();
-            query.whereEqualTo("objectId", currentUserId);
-            // start an asynchronous call for posts
-            query.findInBackground((users, e) -> {
-                if (e == null) {
-                    currentUser = users.get(0);
-                } else {
-                    Log.e(TAG, "Error getting Parse user" + e.getMessage());
-                }
-            });
-        }
 
         ParseQuery<ParseObject> checkRecipientQuery = ParseQuery.getQuery("Friends");
         checkRecipientQuery.whereEqualTo("recipient_user", currentUser);
@@ -191,5 +169,32 @@ public class GroupsFragment extends Fragment {
                 }
             }
         });
+    }
+
+    private void getCurrentUser() {
+        if (ParseUser.getCurrentUser() != null) {
+            currentUser = ParseUser.getCurrentUser();
+        } else {
+            AccessToken accessToken = AccessToken.getCurrentAccessToken();
+            boolean isLoggedIn = accessToken != null && !accessToken.isExpired();
+            if (isLoggedIn) {
+                SharedPreferences sharedPreferences = getContext().getSharedPreferences("FB_userId", Context.MODE_PRIVATE);
+                String currentUserId = sharedPreferences.getString("facebook_user_id", null);
+                ParseQuery<ParseUser> query = ParseUser.getQuery();
+                query.whereEqualTo("objectId", currentUserId);
+                // start an asynchronous call for posts
+                query.findInBackground(new FindCallback<ParseUser>() {
+                    @Override
+                    public void done(List<ParseUser> objects, ParseException e) {
+                        if (e == null) {
+                            currentUser = objects.get(0);
+                        } else {
+                            Log.e(TAG, "Error getting Parse user" + e.getMessage());
+                        }
+
+                    }
+                });
+            }
+        }
     }
 }

@@ -121,6 +121,7 @@ public class AddFragment extends Fragment implements EditPreferencesDialogFragme
             if (isLoggedIn) {
                 SharedPreferences sharedPreferences = getContext().getSharedPreferences("FB_userId", Context.MODE_PRIVATE);
                 String currentUserId = sharedPreferences.getString("facebook_user_id", null);
+                Log.e(TAG, "SHARED PREF ID" + currentUserId);
                 ParseQuery<ParseUser> query = ParseUser.getQuery();
                 query.whereEqualTo("objectId", currentUserId);
                 // start an asynchronous call for posts

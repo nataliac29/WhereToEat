@@ -44,6 +44,8 @@ public class LoginActivity extends AppCompatActivity {
     private Button btnLogin;
     private Button btnToSignUp;
 
+    private String username;
+
     //    Facebook Login
     CallbackManager callbackManager;
     LoginButton loginButton;
@@ -81,26 +83,29 @@ public class LoginActivity extends AppCompatActivity {
                             public void onCompleted(JSONObject object, GraphResponse response) {
                                 Log.e(TAG, "here pt2");
                                 JSONObject json = response.getJSONObject();
+                                Log.e(TAG, json.toString());
                                 if (json != null) {
-                                    String username = null;
                                     try {
                                         username = json.getString("email");
                                     } catch (JSONException e) {
                                         e.printStackTrace();
                                     }
+                                    Log.e(TAG, username);
                                     // check if user has signed in before
                                     ParseQuery<ParseUser> query = ParseUser.getQuery();
                                     query.whereEqualTo("username", username);
-                                    // start an asynchronous call for posts
+                                    // start an asynchronous call for user
                                     query.findInBackground(new FindCallback<ParseUser>() {
                                         @Override
                                         public void done(List<ParseUser> objects, ParseException e) {
+                                            Log.e(TAG, "in done login");
                                             if (objects.size() == 0) {
                                                 // error, show error text
                                                 Log.e(TAG, "error auto logging in");
                                                 // Add user to Parse user table, using email as username
                                             } else {
                                                 // if user has already signed up, store id in Shared Preferences
+                                                Log.e(TAG, "here pt56");
                                                 addIdSharePref(objects.get(0).getObjectId());
                                             }
                                         }
