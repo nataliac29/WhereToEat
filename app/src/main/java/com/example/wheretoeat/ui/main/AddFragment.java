@@ -18,6 +18,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -52,7 +53,7 @@ import okhttp3.Callback;
 import okhttp3.Response;
 
 
-public class AddFragment extends Fragment implements LocationListener{
+public class AddFragment extends Fragment implements EditPreferencesDialogFragment.EditPreferencesDialogListener {
     /*
     button listener
         update parse table
@@ -62,17 +63,8 @@ public class AddFragment extends Fragment implements LocationListener{
     Button btnCode;
     EditText etCode;
     ParseUser currentUser;
-    ParseUser recipientUser;
+    String recipientUsername;
 
-    //for location functionality
-    LocationManager lm;
-    Double latitude;
-    Double longitude;
-    Criteria criteria;
-    String bestProvider;
-
-
-    public ArrayList<Restaurant> restaurants = new ArrayList<>();
 
     public static final String TAG = "AddFragment";
 
@@ -108,286 +100,15 @@ public class AddFragment extends Fragment implements LocationListener{
         btnCode.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String recipientUsername = etCode.getText().toString();
-                checkFriendExists(recipientUsername);
-            }
-        });
-
-    }
-
-    @Override
-    public void onPause() {
-        super.onPause();
-        if (lm != null) {
-            lm.removeUpdates(this);
-        }
-    }
-
-
-    int resultSize;
-
-    // returns true if there is already a connection between the users, false if not
-    private void checkFriendExists(String recipientUsername) {
-
-
-//        Attempt at inner queries to avoid adding another query to get recipient user, did not work
-//        ParseQuery<ParseObject> innerQuery = ParseQuery.getQuery("User");
-//        innerQuery.whereEqualTo("username", recipientUsername);
-//
-//        ParseQuery<ParseObject> checkRecipientQuery = ParseQuery.getQuery("Friends");
-//        checkRecipientQuery.whereMatchesQuery("recipient_user", innerQuery);
-//        checkRecipientQuery.whereEqualTo("initial_user", recipientUsername);
-//
-//
-//        ParseQuery<ParseObject> checkInitialQuery = ParseQuery.getQuery("Friends");
-//        checkInitialQuery.whereMatchesQuery("initial_user", innerQuery);
-//        checkInitialQuery.whereEqualTo("recipient_user", recipientUsername);
-        Log.e(TAG, "logged in user: " + currentUser.getObjectId());
-        // query to get recipient user
-        ParseQuery<ParseUser> getRecipientQuery = ParseUser.getQuery();
-        getRecipientQuery.whereEqualTo("username", recipientUsername);
-
-        // query to get relationship if one exists
-        ParseQuery<ParseObject> checkRecipientQuery = ParseQuery.getQuery("Friends");
-        checkRecipientQuery.whereEqualTo("recipient_user", currentUser);
-
-
-        ParseQuery<ParseObject> checkInitialQuery = ParseQuery.getQuery("Friends");
-        checkInitialQuery.whereEqualTo("initial_user", currentUser);
-
-
-        List<ParseQuery<ParseObject>> queries = new ArrayList<ParseQuery<ParseObject>>();
-        queries.add(checkRecipientQuery);
-        queries.add(checkInitialQuery);
-
-        ParseQuery<ParseObject> mainQuery = ParseQuery.or(queries);
-
-        // get recipient first, then run second query to see if it returns row
-        getRecipientQuery.findInBackground(new FindCallback<ParseUser>() {
-            @Override
-            public void done(List<ParseUser> objects, ParseException e) {
-                if (e == null) {
-                    Log.e(TAG, "getting recipient user" + objects.toString());
-                    recipientUser = objects.get(0);
-
-                    checkRecipientQuery.whereEqualTo("initial_user", recipientUser);
-                    checkInitialQuery.whereEqualTo("recipient_user", recipientUser);
-
-                    mainQuery.findInBackground(new FindCallback<ParseObject>() {
-                        @Override
-                        public void done(List<ParseObject> objects, ParseException e1) {
-                            if (e == null) {
-                                Log.e(TAG, "result of check friend exists: " + objects.toString());
-                                resultSize = objects.size();
-                                // no relationship already exists, continue with creating row
-                                if (resultSize == 0) {
-                                    addRecipientUser(recipientUsername);
-                                }
-                                else {
-                                    Toast.makeText(getContext(), "You have already added this user", Toast.LENGTH_SHORT).show();
-                                }
-                            }
-                        }
-                    });
-                }
-                else {
-                    Log.e(TAG, "error getting recipient user", e);
-                }
+                recipientUsername = etCode.getText().toString();
+                showEditDialog();
+//                checkFriendExists(recipientUsername);
             }
         });
 
     }
 
 
-    Friends friend = new Friends();
-
-    private void addRecipientUser(String recipientUsername) {
-        ParseRelation<ParseObject> relation = friend.getRelation("recipient_user");
-        relation.add(recipientUser);
-        // after adding recipient user relation, add initial user relation
-        addInitUser();
-    }
-
-    private void addInitUser() {
-        ParseRelation<ParseObject> relation = friend.getRelation("initial_user");
-        relation.add(currentUser);
-        // after relations added, save row to DB in background thread
-        saveFriend();
-    }
-
-    private void saveFriend() {
-        friend.saveInBackground(new SaveCallback() {
-            @Override
-            public void done(ParseException e) {
-                if (e != null) {
-                    Log.e(TAG, "Error while saving", e);
-                    Toast.makeText(getContext(), "Error while saving!", Toast.LENGTH_SHORT).show();
-                }
-                Log.i(TAG, "Post save was successful");
-                etCode.setText("");
-                checkLocationPermissions();
-            }
-        });
-    }
-
-    private void checkLocationPermissions() {
-        Log.e(TAG, "in checklocationpermissions");
-        if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissionLauncher.launch(
-                    Manifest.permission.ACCESS_COARSE_LOCATION);
-        }
-        else {
-            Log.e(TAG, "in checklocationpermissions-- else");
-            try {
-                getLongLat();
-            } catch (IOException e) {
-                Log.e(TAG, "check location permissions error", e);
-                e.printStackTrace();
-
-            }
-        }
-    }
-
-    private void getLongLat() throws IOException {
-        Log.e(TAG, "in getzipcode");
-        lm = (LocationManager) getActivity().getSystemService(Context.LOCATION_SERVICE);
-        criteria = new Criteria();
-        bestProvider = String.valueOf(lm.getBestProvider(criteria, true));
-        if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return;
-        }
-        Location location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-        if (location != null) {
-            longitude = location.getLongitude();
-            latitude = location.getLatitude();
-            getZipCode();
-        }
-        else {
-            lm.requestLocationUpdates(bestProvider, 1000, 0, this::onLocationChanged);
-        }
-
-    }
-    @Override
-    public void onLocationChanged(Location location) {
-        //Hey, a non null location! Sweet!
-
-        //remove location callback:
-        lm.removeUpdates(this);
-
-        //open the map:
-        latitude = location.getLatitude();
-        longitude = location.getLongitude();
-        Toast.makeText(getContext(), "latitude:" + latitude + " longitude:" + longitude, Toast.LENGTH_SHORT).show();
-        try {
-            getZipCode();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-    private void getZipCode() throws IOException {
-        Geocoder geocoder;
-        List<Address> addresses;
-        geocoder = new Geocoder(getContext(), Locale.getDefault());
-
-        addresses = geocoder.getFromLocation(latitude, longitude, 1); // Here 1 represent max location result to returned, by documents it recommended 1 to 5
-
-        String postalCode = addresses.get(0).getPostalCode();
-            Log.e(TAG, "postalCode: " + postalCode);
-        getRestaurants(postalCode);
-    }
-
-
-
-
-    // Register the permissions callback, which handles the user's response to the
-// system permissions dialog. Save the return value, an instance of
-// ActivityResultLauncher, as an instance variable.
-    private ActivityResultLauncher<String> requestPermissionLauncher =
-            registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
-                if (isGranted) {
-                    // Permission is granted. Continue the action or workflow in your
-                    // app.
-
-                    Log.e(TAG, "in activtyresultlauncher");
-                    try {
-                        getZipCode();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                } else {
-                    // Explain to the user that the feature is unavailable because the
-                    // features requires a permission that the user has denied. At the
-                    // same time, respect the user's decision. Don't link to system
-                    // settings in an effort to convince the user to change their
-                    // decision.
-                    Toast.makeText(getContext(), "Need location", Toast.LENGTH_SHORT).show();
-                }
-            });
-
-    private void getRestaurants(String location) {
-        final YelpService yelpService = new YelpService();
-        yelpService.findRestaurants(location, new Callback() {
-
-            @Override
-            public void onFailure(Call call, IOException e) {
-                e.printStackTrace();
-            }
-
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-//                String jsonData = response.body().string();
-//                Log.e(TAG, jsonData);
-                restaurants = yelpService.processResults(response);
-                JSONArray jsonArray = new JSONArray();
-                for (int i=0; i < restaurants.size(); i++) {
-                    jsonArray.put(restaurants.get(i).getJSONObject());
-                }
-                updateRestaurants(jsonArray);
-
-            }
-        });
-    }
-    public void updateRestaurants(JSONArray restaurants) {
-        ParseQuery<ParseObject> query = ParseQuery.getQuery("Friends");
-        query.whereEqualTo("objectId", friend.getObjectId());
-        Log.e(TAG, "in update restaurants");
-        Log.e(TAG, friend.getObjectId());
-        // Retrieve the object by id
-        query.findInBackground(new FindCallback<ParseObject>() {
-            @Override
-            public void done(List<ParseObject> objects, ParseException e) {
-                if (e == null) {
-                    Friends currFriend = (Friends) objects.get(0);
-                    // Update the fields we want to
-                    currFriend.put("restaurants", restaurants);
-                    // All other fields will remain the same
-                    currFriend.saveInBackground(new SaveCallback() {
-                        public void done(ParseException e) {
-                            if (e == null) {
-                                //success, saved!
-                                Log.d("MyApp", "Successfully saved!");
-                            } else {
-                                //fail to save!
-                                e.printStackTrace();
-                                Log.e(TAG, "saving error", e);
-                            }
-                        }
-                    });
-
-                } else {
-                    // something went wrong
-                    Toast.makeText(getContext(), e.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
-          }
 
 
 
@@ -418,4 +139,18 @@ public class AddFragment extends Fragment implements LocationListener{
         }
     }
 
+    // Call this method to launch the edit dialog
+    private void showEditDialog() {
+        FragmentManager fm = getFragmentManager();
+        EditPreferencesDialogFragment editPreferencesDialogFragment = EditPreferencesDialogFragment.newInstance("Some Title", currentUser, recipientUsername );
+        // SETS the target fragment for use later when sending results
+        editPreferencesDialogFragment.setTargetFragment(AddFragment.this, 300);
+        editPreferencesDialogFragment.show(fm, "fragment_edit_name");
     }
+
+    @Override
+    public void onFinishEditDialog(String inputText) {
+        Toast.makeText(getContext(), "Hi, " + inputText, Toast.LENGTH_SHORT).show();
+        etCode.setText("");
+    }
+}

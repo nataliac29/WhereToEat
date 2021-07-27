@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Base application theme. -->
+    <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
+
+        <!-- ..... -->
+
+        <item name="android:dialogTheme">@style/AppDialogTheme</item>
+    </style>
+
+
+    <!-- http://stackoverflow.com/a/32711916/5758378 -->
+    <!-- defaults to true on api >= 23 -->
+    <style name="AppDialogTheme" parent="@style/Theme.AppCompat.Light.Dialog">
+        <item name="android:windowNoTitle">false</item>
+    </style>
+
+</resources>
