@@ -46,11 +46,17 @@ public class RestaurantAdapter extends BaseAdapter {
     JSONArray likedRestaurants;
     String friendId;
 
-    DataTransferInterface dtInterface;
+    public interface OnClickListener {
+        void onRestaurantLike();
+        void onRestaurantDislike();
+    }
 
-    public RestaurantAdapter(Context context, JSONArray restaurants) {
+    private OnClickListener onClickListener;
+
+    public RestaurantAdapter(Context context, JSONArray restaurants, OnClickListener onClickListener) {
         this.context = context;
         this.restaurants = restaurants;
+        this.onClickListener = onClickListener;
     }
 
 //    //Usually involves inflating a layout from XML and retuning the holder
@@ -108,6 +114,7 @@ public class RestaurantAdapter extends BaseAdapter {
         RatingBar tvRestaurantRating;
         TextView tvRestaurantCategories;
         Button btnLikeRestaurant;
+        Button btnDislike;
         ImageView ivCover;
 
 
@@ -129,6 +136,7 @@ public class RestaurantAdapter extends BaseAdapter {
         tvRestaurantRating = itemView.findViewById(R.id.tvRestaurantRating);
         btnLikeRestaurant = itemView.findViewById(R.id.btnLikeRestaurant);
         ivCover = itemView.findViewById(R.id.ivCover);
+        btnDislike = itemView.findViewById(R.id.btnDislike);
 
 
         int radius = 10; // corner radius, higher value = more rounded
@@ -137,7 +145,7 @@ public class RestaurantAdapter extends BaseAdapter {
         try {
             imageUrl = restaurant.getString("imageUrl");
         } catch (JSONException e) {
-            imageUrl = null;
+             imageUrl = null;
             e.printStackTrace();
         }
 
@@ -166,6 +174,21 @@ public class RestaurantAdapter extends BaseAdapter {
         }
         tvRestaurantRating.setRating((float) rating);
         btnLikeRestaurant.setText("LIKE");
+        btnDislike.setText("clear");
+
+        btnLikeRestaurant.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onClickListener.onRestaurantLike();
+            }
+        });
+
+        btnDislike.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onClickListener.onRestaurantDislike();
+            }
+        });
 
 
         return itemView;

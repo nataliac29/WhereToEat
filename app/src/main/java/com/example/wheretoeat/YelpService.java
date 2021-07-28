@@ -1,5 +1,7 @@
 package com.example.wheretoeat;
 
+import android.util.Log;
+
 import com.example.wheretoeat.modals.Restaurant;
 
 import okhttp3.Callback;
@@ -19,14 +21,19 @@ import okhttp3.Response;
 
 public class YelpService {
 
-    public static void findRestaurants(String location, Callback callback) {
+    public static void findRestaurants(String location, String pricePref, Callback callback) {
 
         OkHttpClient client = new OkHttpClient.Builder()
                 .build();
 
         HttpUrl.Builder urlBuilder = HttpUrl.parse("https://api.yelp.com/v3/businesses/search?term=restaurants&limit=10").newBuilder();
         urlBuilder.addQueryParameter("location", location);
+        if (pricePref != null) {
+            urlBuilder.addQueryParameter("price", pricePref);
+        }
         String url = urlBuilder.build().toString();
+
+        Log.e("YelpService", "Yelp Request: " + url );
 
         Request request= new Request.Builder()
                 .url(url)
