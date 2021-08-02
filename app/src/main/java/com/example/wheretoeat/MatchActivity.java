@@ -38,7 +38,8 @@ public class MatchActivity extends AppCompatActivity implements RestaurantAdapte
 
 
     public ParseUser currentUser;
-    public String currFriend;
+    public String currGroup;
+    private ParseObject currGroupObject;
     public Friends currFriendObject;
     public JSONArray restaurants;
     public JSONArray likedRestaurants;
@@ -59,16 +60,18 @@ public class MatchActivity extends AppCompatActivity implements RestaurantAdapte
 
         restaurants = new JSONArray();
 
-        currFriend = getIntent().getStringExtra("friendGroup");
+        currGroup = getIntent().getStringExtra("friendGroup");
 
+        getCurrentUser();
 
-        ParseQuery<ParseObject> query = ParseQuery.getQuery("Friends");
+        ParseQuery<ParseObject> query = ParseQuery.getQuery("Group");
         Log.e("MatchActivity", "in update restaurants");
         // Retrieve the object by id
-        query.getInBackground(currFriend, new GetCallback<ParseObject>() {
+        query.getInBackground(currGroup, new GetCallback<ParseObject>() {
             @Override
             public void done(ParseObject object, ParseException e) {
                 if (e == null) {
+                    currGroupObject = object;
 //                    Log.e("MatchActivity", object.getJSONArray("restaurants").toString());
                     for (int i = 0; i < object.getJSONArray("restaurants").length(); i++) {
                         try {
@@ -138,8 +141,7 @@ public class MatchActivity extends AppCompatActivity implements RestaurantAdapte
                 // this method is called when no card is present
                 Toast.makeText(MatchActivity.this, "Done!", Toast.LENGTH_SHORT).show();
                 Log.e(TAG, "CARDS DONE");
-                Matches match = new Matches();
-                addUser(match);
+                getMatchRow();
             }
 
             @Override
@@ -158,67 +160,37 @@ public class MatchActivity extends AppCompatActivity implements RestaurantAdapte
     }
 
 
-    private void addUser(Matches match) {
-        if (ParseUser.getCurrentUser() != null) {
-            currentUser = ParseUser.getCurrentUser();
-            ParseRelation<ParseObject> userRelation = match.getRelation("user");
-            userRelation.add(currentUser);
-            addGroupId(match);
-        }
-        AccessToken accessToken = AccessToken.getCurrentAccessToken();
-        boolean isLoggedIn = accessToken != null && !accessToken.isExpired();
-        if (isLoggedIn) {
-            SharedPreferences sharedPreferences = MatchActivity.this.getSharedPreferences("FB_userId", Context.MODE_PRIVATE);
-            String currentUserId = sharedPreferences.getString("facebook_user_id", null);
-            ParseQuery<ParseUser> query = ParseUser.getQuery();
-            query.whereEqualTo("objectId", currentUserId);
-            // start an asynchronous call for posts
-            query.findInBackground((users, e) -> {
-                if (e == null) {
-                    currentUser = users.get(0);
-                    ParseRelation<ParseObject> userRelation = match.getRelation("user");
-                    userRelation.add(currentUser);
-                    addGroupId(match);
-                } else {
-                    Log.e("MatchActivity", "Error getting Parse user" + e.getMessage());
-                }
-            });
-        }
+    private void getMatchRow() {
+        ParseQuery<ParseObject> query = ParseQuery.getQuery("Matches");
+        query.whereEqualTo("user", currentUser);
+        query.whereEqualTo("groupId", currGroupObject);
+
+        query.getFirstInBackground(new GetCallback<ParseObject>() {
+           @Override
+           public void done(ParseObject object, ParseException e) {
+               if (e == null) {
+                   try {
+                       saveMatches(object);
+                   } catch (JSONException jsonException) {
+                       jsonException.printStackTrace();
+                   }
+               } else {
+                   Log.e(TAG, "error getting user's match row", e);
+               }
+           }
+       });
 
     }
 
-    private void addGroupId(Matches match) {
-        ParseQuery<ParseObject> query = ParseQuery.getQuery("Friends");
-        query.whereEqualTo("objectId", currFriend);
-        query.findInBackground(new FindCallback<ParseObject>() {
-            @Override
-            public void done(List<ParseObject> objects, ParseException e) {
-                if (e == null) {
-                    currFriendObject = (Friends) objects.get(0);
-                    ParseRelation<ParseObject> userRelation = match.getRelation("group_id");
-                    userRelation.add(currFriendObject);
-                    try {
-                        saveMatches(match);
-                    } catch (JSONException jsonException) {
-                        jsonException.printStackTrace();
-                    }
 
-                } else {
-                    // something went wrong
-                    Toast.makeText(MatchActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
-    }
-
-    private void saveMatches(Matches match) throws JSONException {
+    private void saveMatches(ParseObject match) throws JSONException {
         match.put("matches", likedRestaurants);
         match.saveInBackground(new SaveCallback() {
             @Override
             public void done(ParseException e) {
                 if (e == null) {
                     Log.e("MatchActivity", "success saving matches");
-                    findOtherUser();
+                    checkMatchingDone();
                 } else {
                     Log.e("MatchActivity", "Matches save was not successful", e);
                 }
@@ -229,48 +201,14 @@ public class MatchActivity extends AppCompatActivity implements RestaurantAdapte
         finish();
     }
 
-    // check if the other user has finished matching, if so find mutual matches
-    private void findOtherUser() {
-        currFriendObject.getRelation("recipient_user").getQuery().findInBackground(new FindCallback<ParseObject>() {
-            @Override
-            public void done(List<ParseObject> objects2, ParseException e2) {
-                if (e2 == null) {
-                    for (ParseObject user : objects2) {
-                        if (!(user.getObjectId().equals(currentUser.getObjectId()))) {
-                            otherUser = (ParseUser) user;
-                            Log.e(TAG, "got other user pt1" + otherUser.getObjectId());
-                        } else {
-                            currFriendObject.getRelation("initial_user").getQuery().findInBackground(new FindCallback<ParseObject>() {
-                                @Override
-                                public void done(List<ParseObject> objects, ParseException e) {
-                                    if (e == null) {
-                                        for (ParseObject user : objects) {
-                                            otherUser = (ParseUser) user;
-                                            Log.e(TAG, "got other user" + otherUser.getObjectId());
-                                            checkMatchingDone();
-                                        }
-                                    } else {
-                                        Log.e("MatchActivity", "error getting other user", e);
-
-                                    }
-                                }
-                            });
-                        }
-                    }
-                } else {
-                    Log.e("MatchActivity", "error getting other user", e2);
-                }
-            }
-        });
-    }
 
 
     private void checkMatchingDone() {
         Log.e(TAG, "in checkmatchingdone");
 
         ParseQuery<ParseObject> checkifMatched = ParseQuery.getQuery("Matches");
-        checkifMatched.whereEqualTo("user", otherUser);
-        checkifMatched.whereEqualTo("group_id", currFriendObject);
+        checkifMatched.whereEqualTo("groupId", currGroupObject);
+        checkifMatched.whereEqualTo("matches", null);
 
         Log.e(TAG, "in checkMatchingDone, before query");
 
@@ -280,11 +218,9 @@ public class MatchActivity extends AppCompatActivity implements RestaurantAdapte
                 if (e == null) {
                     Log.e(TAG, "in checkMatchingDone, e not null");
                     // if other user has submitted their matches
-                    if (objects.size() != 0) {
-                        JSONArray otherUserMatches = objects.get(0).getJSONArray("matches");
-                        Log.e(TAG, "in checkMatchingDone, found other user matches" + otherUserMatches.toString());
+                    if (objects.size() == 0) {
                         try {
-                            findMutualMatches(otherUserMatches);
+                            findMutualMatches();
                         } catch (JSONException jsonException) {
                             jsonException.printStackTrace();
                         }
@@ -296,33 +232,56 @@ public class MatchActivity extends AppCompatActivity implements RestaurantAdapte
         });
     }
 
-    private void findMutualMatches(JSONArray otherUserMatches) throws JSONException {
-        Log.e(TAG, "in findMutualMatches");
-        JSONArray currentUserMatches = likedRestaurants;
+    private void findMutualMatches() throws JSONException {
 
-        mutualMatches = new JSONArray();
-        for (int i = 0; i < otherUserMatches.length(); i++) {
-            for (int j = 0; j < currentUserMatches.length(); j++) {
-                JSONObject rest1 = (JSONObject) otherUserMatches.get(i);
-                JSONObject rest2 = (JSONObject) currentUserMatches.get(j);
+        ParseQuery<ParseObject> findAllMatches = ParseQuery.getQuery("Matches");
+        findAllMatches.whereEqualTo("groupId", currGroupObject);
+        findAllMatches.whereNotEqualTo("matches", null);
 
-                if (rest1.get("id").equals(rest2.get("id"))) {
-                    mutualMatches.put(otherUserMatches.get(i));
-                }
-            }
-        }
-        Log.e(TAG, "findmutualmatches-- mutual matches" + mutualMatches.toString());
-        currFriendObject.put("mutualMatches", mutualMatches);
-        currFriendObject.saveInBackground(new SaveCallback() {
+        findAllMatches.findInBackground(new FindCallback<ParseObject>() {
             @Override
-            public void done(ParseException e) {
+            public void done(List<ParseObject> objects, ParseException e) {
                 if (e == null) {
-                    Log.e("MatchActivity", "sucessfully saved mutual matches");
+                    mutualMatches = objects.get(0).getJSONArray("matches");
+                    for (int i = 1; i < objects.size(); i++) {
+                        try {
+                            mutualMatches = findCommonRestaurants(mutualMatches, objects.get(i).getJSONArray("matches"));
+                        } catch (JSONException jsonException) {
+                            jsonException.printStackTrace();
+                        }
+                    }
+                    saveMutualMatches();
                 } else {
-                    Log.e("MatchActivity", "error saving mutual matches");
+                    Log.e(TAG, "error getting matches", e);
                 }
             }
         });
+
+        Log.e(TAG, "in findMutualMatches");
+        JSONArray currentUserMatches = likedRestaurants;
+
+    }
+
+    private void saveMutualMatches() {
+        currGroupObject.put("mutualMatches", mutualMatches);
+        currGroupObject.saveInBackground();
+
+    }
+
+
+    private JSONArray findCommonRestaurants(JSONArray array1, JSONArray array2) throws JSONException {
+        JSONArray tempMutualMatches = new JSONArray();
+        for (int i = 0; i < array1.length(); i++) {
+            for (int j = 0; j < array2.length(); j++) {
+                JSONObject rest1 = (JSONObject) array1.get(i);
+                JSONObject rest2 = (JSONObject) array2.get(j);
+
+                if (rest1.get("id").equals(rest2.get("id"))) {
+                    tempMutualMatches.put(array1.get(i));
+                }
+            }
+        }
+        return tempMutualMatches;
     }
 // trigger cards to swipe when the user clicks the button instead of actually swiping
         @Override
@@ -334,5 +293,34 @@ public class MatchActivity extends AppCompatActivity implements RestaurantAdapte
         public void onRestaurantDislike() {
             cardStack.swipeTopCardLeft(100);
         }
+
+
+    private void getCurrentUser() {
+        if (ParseUser.getCurrentUser() != null) {
+            currentUser = ParseUser.getCurrentUser();
+        } else {
+            AccessToken accessToken = AccessToken.getCurrentAccessToken();
+            boolean isLoggedIn = accessToken != null && !accessToken.isExpired();
+            if (isLoggedIn) {
+                SharedPreferences sharedPreferences = this.getSharedPreferences("FB_userId", Context.MODE_PRIVATE);
+                String currentUserId = sharedPreferences.getString("facebook_user_id", null);
+                Log.e(TAG, "SHARED PREF ID" + currentUserId);
+                ParseQuery<ParseUser> query = ParseUser.getQuery();
+                query.whereEqualTo("objectId", currentUserId);
+                // start an asynchronous call for posts
+                query.findInBackground(new FindCallback<ParseUser>() {
+                    @Override
+                    public void done(List<ParseUser> objects, ParseException e) {
+                        if (e == null) {
+                            currentUser = objects.get(0);
+                        } else {
+                            Log.e(TAG, "Error getting Parse user" + e.getMessage());
+                        }
+
+                    }
+                });
+            }
+        }
+    }
 
 }

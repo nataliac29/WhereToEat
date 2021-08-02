@@ -19,7 +19,12 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
+import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -52,12 +57,22 @@ import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.Response;
 
-public class EditPreferencesDialogFragment extends DialogFragment implements LocationListener,TextView.OnEditorActionListener {
+public class EditPreferencesDialogFragment extends DialogFragment implements LocationListener{
 
-    private EditText mEditText;
-    private static ParseUser currentUser;
-    private static String recipientUsername;
-    ParseUser recipientUser;
+    private EditText etCustomLocation;
+    private Switch swUserLocation;
+    private RadioGroup rgPrice;
+    private RadioButton rv1;
+    private RadioButton rv2;
+    private RadioButton rv3;
+    private RadioButton rv4;
+    private Button btnClearPrice;
+    private Button btnPrefDone;
+    private EditText etGroupName;
+    private TextView tvGroupName;
+
+
+
 
     //for location functionality
     LocationManager lm;
@@ -66,8 +81,12 @@ public class EditPreferencesDialogFragment extends DialogFragment implements Loc
     Criteria criteria;
     String bestProvider;
 
+    String zipCode;
+    String groupName;
 
-    public ArrayList<Restaurant> restaurants = new ArrayList<>();
+
+    private static boolean isGroup;
+
 
 
 
@@ -79,14 +98,13 @@ public class EditPreferencesDialogFragment extends DialogFragment implements Loc
         // Use `newInstance` instead as shown below
     }
 
-    public static EditPreferencesDialogFragment newInstance(String title, ParseUser currUser, String username) {
+    public static EditPreferencesDialogFragment newInstance(boolean addNewGroup) {
         EditPreferencesDialogFragment frag = new EditPreferencesDialogFragment();
         Bundle args = new Bundle();
-        args.putString("title", title);
         frag.setArguments(args);
         frag.setStyle(DialogFragment.STYLE_NORMAL, R.style.AppDialogTheme);
-        currentUser = currUser;
-        recipientUsername = username;
+
+        isGroup = addNewGroup;
         return frag;
     }
 
@@ -99,16 +117,73 @@ public class EditPreferencesDialogFragment extends DialogFragment implements Loc
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        // Get field from view
-        mEditText = (EditText) view.findViewById(R.id.etCustomLocation);
         // Fetch arguments from bundle and set title
-        String title = "Edit Restaurant Preferences";
+        String title = "Restaurant Preferences";
         getDialog().setTitle(title);
         // Show soft keyboard automatically and request focus to field
-        mEditText.requestFocus();
+
+
+        etCustomLocation = view.findViewById(R.id.etCustomLocation);
+        swUserLocation = view.findViewById(R.id.swUserLocation);
+        rgPrice = view.findViewById(R.id.rgPrice);
+        btnPrefDone = view.findViewById(R.id.btnPrefDone);
+        tvGroupName = view.findViewById(R.id.tvGroupName);
+        etGroupName = view.findViewById(R.id.etGroupName);
+
+        if (!isGroup) {
+            tvGroupName.setVisibility(View.GONE);
+            etGroupName.setVisibility(View.GONE);
+        }
+
+        // Handle switch events
+        swUserLocation.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked){
+                    etCustomLocation.setEnabled(false);
+                    etCustomLocation.setText("");
+                } else {
+                    etCustomLocation.setEnabled(true);
+                    etCustomLocation.requestFocus();
+                    getDialog().getWindow().setSoftInputMode(
+                            WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
+                }
+            }
+        });
+        // default focus
+        etCustomLocation.requestFocus();
         getDialog().getWindow().setSoftInputMode(
                 WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
-        mEditText.setOnEditorActionListener(this);
+
+        btnPrefDone.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                groupName = etGroupName.getText().toString();
+                zipCode = etCustomLocation.getText().toString();
+                if (groupName.length() < 1 && isGroup) {
+                    Toast.makeText(getContext(), "Group name is empty", Toast.LENGTH_SHORT).show();
+                }
+                if (zipCode.length() != 5 && !swUserLocation.isChecked()) {
+                    Toast.makeText(getContext(), "Please enter valid zip code", Toast.LENGTH_SHORT).show();
+                }
+                if (swUserLocation.isChecked()) {
+                    // begin process to get user's zip code
+                    checkLocationPermissions();
+                } else {
+                    sendBackResult();
+                }
+            }
+        });
+        //Price Preferences
+        btnClearPrice = view.findViewById(R.id.btnClearPrice);
+
+        btnClearPrice.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                rgPrice.clearCheck();
+            }
+        });
+
     }
 
     @Override
@@ -117,16 +192,6 @@ public class EditPreferencesDialogFragment extends DialogFragment implements Loc
         return dialog;
     }
 
-    @Override
-    public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-        if (EditorInfo.IME_ACTION_DONE == actionId) {
-            sendBackResult();
-            // Close the dialog and return back to the parent activity
-            dismiss();
-            return true;
-        }
-        return false;
-    }
 
     @Override
     public void onPause() {
@@ -138,127 +203,35 @@ public class EditPreferencesDialogFragment extends DialogFragment implements Loc
 
 
     public interface EditPreferencesDialogListener {
-        void onFinishEditDialog(String inputText);
+        void onFinishEditDialog(String location, String price, String newGroupName);
     }
 
     // Call this method to send the data back to the parent fragment
     public void sendBackResult() {
         // Notice the use of `getTargetFragment` which will be set when the dialog is displayed
         EditPreferencesDialogListener listener = (EditPreferencesDialogListener) getTargetFragment();
-        listener.onFinishEditDialog(mEditText.getText().toString());
+        String pricePref = checkPricePref();
+        Log.e(TAG, "GROUP NAME FROM DIALOG" + groupName);
+        listener.onFinishEditDialog(zipCode, pricePref, groupName);
         dismiss();
     }
 
-
-    int resultSize;
-
-    // returns true if there is already a connection between the users, false if not
-    private void checkFriendExists(String recipientUsername) {
-
-
-//        Attempt at inner queries to avoid adding another query to get recipient user, did not work
-//        ParseQuery<ParseObject> innerQuery = ParseQuery.getQuery("User");
-//        innerQuery.whereEqualTo("username", recipientUsername);
-//
-//        ParseQuery<ParseObject> checkRecipientQuery = ParseQuery.getQuery("Friends");
-//        checkRecipientQuery.whereMatchesQuery("recipient_user", innerQuery);
-//        checkRecipientQuery.whereEqualTo("initial_user", recipientUsername);
-//
-//
-//        ParseQuery<ParseObject> checkInitialQuery = ParseQuery.getQuery("Friends");
-//        checkInitialQuery.whereMatchesQuery("initial_user", innerQuery);
-//        checkInitialQuery.whereEqualTo("recipient_user", recipientUsername);
-        Log.e(TAG, "logged in user: " + currentUser.getObjectId());
-        // query to get recipient user
-        ParseQuery<ParseUser> getRecipientQuery = ParseUser.getQuery();
-        getRecipientQuery.whereEqualTo("username", recipientUsername);
-
-        // query to get relationship if one exists
-        ParseQuery<ParseObject> checkRecipientQuery = ParseQuery.getQuery("Friends");
-        checkRecipientQuery.whereEqualTo("recipient_user", currentUser);
-
-
-        ParseQuery<ParseObject> checkInitialQuery = ParseQuery.getQuery("Friends");
-        checkInitialQuery.whereEqualTo("initial_user", currentUser);
-
-
-        List<ParseQuery<ParseObject>> queries = new ArrayList<ParseQuery<ParseObject>>();
-        queries.add(checkRecipientQuery);
-        queries.add(checkInitialQuery);
-
-        ParseQuery<ParseObject> mainQuery = ParseQuery.or(queries);
-
-        // get recipient first, then run second query to see if it returns row
-        getRecipientQuery.findInBackground(new FindCallback<ParseUser>() {
-            @Override
-            public void done(List<ParseUser> objects, ParseException e) {
-                if (e == null) {
-                    if (objects.size() != 0) {
-                        Log.e(TAG, "getting recipient user" + objects.toString());
-                        recipientUser = objects.get(0);
-
-                        checkRecipientQuery.whereEqualTo("initial_user", recipientUser);
-                        checkInitialQuery.whereEqualTo("recipient_user", recipientUser);
-
-                        mainQuery.findInBackground(new FindCallback<ParseObject>() {
-                            @Override
-                            public void done(List<ParseObject> objects, ParseException e1) {
-                                if (e == null) {
-                                    Log.e(TAG, "result of check friend exists: " + objects.toString());
-                                    resultSize = objects.size();
-                                    // no relationship already exists, continue with creating row
-                                    if (resultSize == 0) {
-                                        addRecipientUser(recipientUsername);
-                                    } else {
-                                        Toast.makeText(getContext(), "You have already added this user", Toast.LENGTH_SHORT).show();
-                                    }
-                                }
-                            }
-                        });
-
-                    }
-                    else {
-                        Toast.makeText(getContext(), "User does not exist", Toast.LENGTH_SHORT).show();
-
-                    }
-                }
-                else {
-                    Log.e(TAG, "error getting recipient user", e);
-                }
-            }
-        });
-
-    }
-
-
-    Friends friend = new Friends();
-
-    private void addRecipientUser(String recipientUsername) {
-        ParseRelation<ParseObject> relation = friend.getRelation("recipient_user");
-        relation.add(recipientUser);
-        // after adding recipient user relation, add initial user relation
-        addInitUser();
-    }
-
-    private void addInitUser() {
-        ParseRelation<ParseObject> relation = friend.getRelation("initial_user");
-        relation.add(currentUser);
-        // after relations added, save row to DB in background thread
-        saveFriend();
-    }
-
-    private void saveFriend() {
-        friend.saveInBackground(new SaveCallback() {
-            @Override
-            public void done(ParseException e) {
-                if (e != null) {
-                    Log.e(TAG, "Error while saving", e);
-                    Toast.makeText(getContext(), "Error while saving!", Toast.LENGTH_SHORT).show();
-                }
-                Log.i(TAG, "Post save was successful");
-                checkLocationPermissions();
-            }
-        });
+    private String checkPricePref() {
+        int buttonChecked = rgPrice.getCheckedRadioButtonId();
+        if (buttonChecked == -1) {
+            return null;
+        }
+        switch (buttonChecked) {
+            case R.id.rv1:
+                return "1";
+            case R.id.rv2:
+                return "2";
+            case R.id.rv3:
+                return "3";
+            case R.id.rv4:
+                return "4";
+        }
+        return null;
     }
 
     private void checkLocationPermissions() {
@@ -298,6 +271,8 @@ public class EditPreferencesDialogFragment extends DialogFragment implements Loc
         if (location != null) {
             longitude = location.getLongitude();
             latitude = location.getLatitude();
+            Log.e(TAG, "location: " + latitude.toString() + longitude.toString());
+
             getZipCode();
         }
         else {
@@ -315,6 +290,8 @@ public class EditPreferencesDialogFragment extends DialogFragment implements Loc
         //open the map:
         latitude = location.getLatitude();
         longitude = location.getLongitude();
+
+        Log.e(TAG, "location: " + latitude.toString() + longitude.toString());
         Toast.makeText(getContext(), "latitude:" + latitude + " longitude:" + longitude, Toast.LENGTH_SHORT).show();
         try {
             getZipCode();
@@ -331,7 +308,8 @@ public class EditPreferencesDialogFragment extends DialogFragment implements Loc
 
         String postalCode = addresses.get(0).getPostalCode();
         Log.e(TAG, "postalCode: " + postalCode);
-        getRestaurants(postalCode);
+        zipCode = postalCode;
+        sendBackResult();
     }
 
 
@@ -348,7 +326,7 @@ public class EditPreferencesDialogFragment extends DialogFragment implements Loc
 
                     Log.e(TAG, "in activtyresultlauncher");
                     try {
-                        getZipCode();
+                        getLongLat();
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -362,61 +340,4 @@ public class EditPreferencesDialogFragment extends DialogFragment implements Loc
                 }
             });
 
-    private void getRestaurants(String location) {
-        final YelpService yelpService = new YelpService();
-        yelpService.findRestaurants(location, new Callback() {
-
-            @Override
-            public void onFailure(Call call, IOException e) {
-                e.printStackTrace();
-            }
-
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-//                String jsonData = response.body().string();
-//                Log.e(TAG, jsonData);
-                restaurants = yelpService.processResults(response);
-                JSONArray jsonArray = new JSONArray();
-                for (int i=0; i < restaurants.size(); i++) {
-                    jsonArray.put(restaurants.get(i).getJSONObject());
-                }
-                updateRestaurants(jsonArray);
-
-            }
-        });
-    }
-    public void updateRestaurants(JSONArray restaurants) {
-        ParseQuery<ParseObject> query = ParseQuery.getQuery("Friends");
-        query.whereEqualTo("objectId", friend.getObjectId());
-        Log.e(TAG, "in update restaurants");
-        Log.e(TAG, friend.getObjectId());
-        // Retrieve the object by id
-        query.findInBackground(new FindCallback<ParseObject>() {
-            @Override
-            public void done(List<ParseObject> objects, ParseException e) {
-                if (e == null) {
-                    Friends currFriend = (Friends) objects.get(0);
-                    // Update the fields we want to
-                    currFriend.put("restaurants", restaurants);
-                    // All other fields will remain the same
-                    currFriend.saveInBackground(new SaveCallback() {
-                        public void done(ParseException e) {
-                            if (e == null) {
-                                //success, saved!
-                                Log.d("MyApp", "Successfully saved!");
-                            } else {
-                                //fail to save!
-                                e.printStackTrace();
-                                Log.e(TAG, "saving error", e);
-                            }
-                        }
-                    });
-
-                } else {
-                    // something went wrong
-                    Toast.makeText(getContext(), e.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
-    }
 }

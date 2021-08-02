@@ -1,21 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/edit_name"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:layout_gravity="center"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:padding="5dp">
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Location Preference:" />
-    <Button
-        android:id="@+id/btnUserZipcode"
-        android:layout_width="wrap_content"
+        android:text="Group Settings"
+        android:textColor="#000000"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tvGroupName"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@android:color/transparent"
-        android:textColor="@color/grey"
+        android:text="Set Group Name:" />
+
+    <EditText
+        android:id="@+id/etGroupName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:inputType="textPersonName"
+        android:text="Name" />
+
+    <Switch
+        android:id="@+id/swUserLocation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:text="Use your location" />
 
     <TextView
@@ -27,13 +44,72 @@
         android:id="@+id/etCustomLocation"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:hint="zipcode"
         android:imeOptions="actionDone"
-        android:inputType="text"
-        android:hint="zipcode"/>
+        android:inputType="text" />
+
+    <TextView
+        android:id="@+id/textView3"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Price Preference:"
+        android:textColor="#000000"
+        android:textStyle="bold" />
+
+    <RadioGroup
+        android:id="@+id/rgPrice"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <RadioButton
+            android:id="@+id/rv1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="$" />
+
+        <RadioButton
+            android:id="@+id/rv2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="$$" />
+
+        <RadioButton
+            android:id="@+id/rv3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="$$$" />
+
+        <RadioButton
+            android:id="@+id/rv4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="$$$$" />
+
+    </RadioGroup>
+
+
+    <Button
+        android:id="@+id/btnClearPrice"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@android:color/transparent"
+        android:backgroundTint="@android:color/transparent"
+        android:minHeight="30dip"
+        android:text="Clear price preferences"
+        android:textAppearance="@style/TextAppearance.AppCompat.Small"
+        android:textColor="@color/grey"
+        app:iconPadding="0dp" />
 
     <Button
         android:id="@+id/btnPrefDone"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="DONE" />
+
+
 </LinearLayout>

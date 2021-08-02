@@ -13,7 +13,7 @@ public class ParseApplication extends Application {
         super.onCreate();
 
         //Register Parse models
-        ParseObject.registerSubclass(Friends.class);
+//        ParseObject.registerSubclass(Friends.class);
         ParseObject.registerSubclass(Matches.class);
 
 
