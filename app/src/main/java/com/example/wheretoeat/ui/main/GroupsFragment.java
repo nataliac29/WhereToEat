@@ -35,17 +35,29 @@ public class GroupsFragment extends Fragment {
     public GroupsFragment() {
         // Required empty public constructor
     }
+
+
+    /*
+
+    1. query Matches, get all group id's
+    2. for each group id, also get user info
+
+
+
+
+     */
     RecyclerView rvFriends;
 
     private FriendsAdapter adapter;
 
-    private List<ParseUser> allUsers;
+    private List<ParseObject> allGroups;
+
+    private List<ParseObject> collectGroups;
 
     SwipeRefreshLayout swipeContainer;
 
     ParseUser currentUser;
 
-    private List<ParseUser> allTempUsers;
 
     public static final String TAG = "GroupFragment";
 
@@ -62,8 +74,10 @@ public class GroupsFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         rvFriends = view.findViewById(R.id.rvFriends);
-        allUsers = new ArrayList<>();
-        adapter = new FriendsAdapter(getContext(), allUsers);
+        allGroups = new ArrayList<>();
+
+
+        adapter = new FriendsAdapter(getContext(), allGroups);
 
         rvFriends.setAdapter(adapter);
         rvFriends.setLayoutManager(new LinearLayoutManager(getContext()));
@@ -93,80 +107,38 @@ public class GroupsFragment extends Fragment {
 
 
     private void queryFriends() {
+        collectGroups = new ArrayList<>();
 
-        ArrayList<ParseUser> allTempUsers = new ArrayList<>();
+        ParseQuery<ParseObject> getGroups = ParseQuery.getQuery("Matches");
+        getGroups.whereEqualTo("user", currentUser);
+        getGroups.include("groupId");
+        getGroups.orderByDescending("createdAt");
 
-        ParseQuery<ParseObject> checkRecipientQuery = ParseQuery.getQuery("Friends");
-        checkRecipientQuery.whereEqualTo("recipient_user", currentUser);
-//        checkRecipientQuery.include("initial_user");
-
-        ParseQuery<ParseObject> checkInitialQuery = ParseQuery.getQuery("Friends");
-        checkInitialQuery.whereEqualTo("initial_user", currentUser);
-//        checkRecipientQuery.include("recipient_user");
-
-//
-        List<ParseQuery<ParseObject>> queries = new ArrayList<ParseQuery<ParseObject>>();
-        queries.add(checkRecipientQuery);
-        queries.add(checkInitialQuery);
-
-        ParseQuery<ParseObject> mainQuery = ParseQuery.or(queries);
-
-        mainQuery.findInBackground(new FindCallback<ParseObject>() {
+        getGroups.findInBackground(new FindCallback<ParseObject>() {
             @Override
             public void done(List<ParseObject> objects, ParseException e) {
-                if (e == null) {
-                    if (objects.size() == 0) {
+               if (e == null) {
+                   if (objects.size() == 0) {
                         Toast.makeText(getContext(), "Click the plus tab to add friends!", Toast.LENGTH_SHORT).show();
                         adapter.clear();
                         adapter.notifyDataSetChanged();
                         swipeContainer.setRefreshing(false);
                         return;
-                    }
-
-                    // commentList now contains the last ten comments, and the "post"
-                    // field has been populated. For example:
-                    for (ParseObject friend : objects) {
-
-                        // This does not require a network access.
-                        friend.getRelation("recipient_user").getQuery().findInBackground(new FindCallback<ParseObject>() {
-                            @Override
-                            public void done(List<ParseObject> objects2, ParseException e2) {
-                                if (e2 == null) {
-                                    for (ParseObject user : objects2) {
-                                        if (!(user.getObjectId().equals(currentUser.getObjectId()))) {
-                                            ParseUser recipientUser = (ParseUser) user;
-                                            allTempUsers.add(recipientUser);
-                                        }
-                                    }
-                                } else {
-                                    Toast.makeText(getContext(), e2.getLocalizedMessage(), Toast.LENGTH_SHORT).show();
-                                }
-                                friend.getRelation("initial_user").getQuery().findInBackground(new FindCallback<ParseObject>() {
-                                    @Override
-                                    public void done(List<ParseObject> objects3, ParseException e3) {
-                                        if (e3 == null) {
-                                            for (ParseObject user : objects3) {
-                                                if (!(user.getObjectId().equals(currentUser.getObjectId()))) {
-                                                    allTempUsers.add((ParseUser) user);
-                                                }
-                                            }
-                                        } else {
-                                            Toast.makeText(getContext(), e3.getLocalizedMessage(), Toast.LENGTH_SHORT).show();
-                                        }
-                                        adapter.clear();
-                                        allUsers.addAll(allTempUsers);
-                                        adapter.notifyDataSetChanged();
-                                        for (ParseUser user : allUsers) {
-                                            Log.e(TAG, user.getString("firstName"));
-                                        }
-                                        swipeContainer.setRefreshing(false);
-                                    }
-                                });
-                            }
-
-                        });
-                    }
-                }
+                    } else {
+                       for (ParseObject parseObject : objects) {
+                           Log.e(TAG, parseObject.getParseObject("groupId").toString());
+                           collectGroups.add(parseObject.getParseObject("groupId"));
+                           Log.e(TAG, "collectGroups" + collectGroups.toString());
+                       }
+                       adapter.clear();
+                       Log.e(TAG, "all groups: " + collectGroups.toString());
+                       allGroups.addAll(collectGroups);
+                       adapter.notifyDataSetChanged();
+                       swipeContainer.setRefreshing(false);
+                   }
+               } else {
+                   Log.e(TAG, "error", e);
+               }
             }
         });
     }

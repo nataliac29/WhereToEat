@@ -68,6 +68,8 @@ public class EditPreferencesDialogFragment extends DialogFragment implements Loc
     private RadioButton rv4;
     private Button btnClearPrice;
     private Button btnPrefDone;
+    private EditText etGroupName;
+    private TextView tvGroupName;
 
 
 
@@ -80,7 +82,10 @@ public class EditPreferencesDialogFragment extends DialogFragment implements Loc
     String bestProvider;
 
     String zipCode;
+    String groupName;
 
+
+    private static boolean isGroup;
 
 
 
@@ -93,12 +98,13 @@ public class EditPreferencesDialogFragment extends DialogFragment implements Loc
         // Use `newInstance` instead as shown below
     }
 
-    public static EditPreferencesDialogFragment newInstance(String title, ParseUser currUser, String username) {
+    public static EditPreferencesDialogFragment newInstance(boolean addNewGroup) {
         EditPreferencesDialogFragment frag = new EditPreferencesDialogFragment();
         Bundle args = new Bundle();
-        args.putString("title", title);
         frag.setArguments(args);
         frag.setStyle(DialogFragment.STYLE_NORMAL, R.style.AppDialogTheme);
+
+        isGroup = addNewGroup;
         return frag;
     }
 
@@ -121,6 +127,13 @@ public class EditPreferencesDialogFragment extends DialogFragment implements Loc
         swUserLocation = view.findViewById(R.id.swUserLocation);
         rgPrice = view.findViewById(R.id.rgPrice);
         btnPrefDone = view.findViewById(R.id.btnPrefDone);
+        tvGroupName = view.findViewById(R.id.tvGroupName);
+        etGroupName = view.findViewById(R.id.etGroupName);
+
+        if (!isGroup) {
+            tvGroupName.setVisibility(View.GONE);
+            etGroupName.setVisibility(View.GONE);
+        }
 
         // Handle switch events
         swUserLocation.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -145,11 +158,18 @@ public class EditPreferencesDialogFragment extends DialogFragment implements Loc
         btnPrefDone.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                groupName = etGroupName.getText().toString();
+                zipCode = etCustomLocation.getText().toString();
+                if (groupName.length() < 1 && isGroup) {
+                    Toast.makeText(getContext(), "Group name is empty", Toast.LENGTH_SHORT).show();
+                }
+                if (zipCode.length() != 5 && !swUserLocation.isChecked()) {
+                    Toast.makeText(getContext(), "Please enter valid zip code", Toast.LENGTH_SHORT).show();
+                }
                 if (swUserLocation.isChecked()) {
                     // begin process to get user's zip code
                     checkLocationPermissions();
                 } else {
-                    zipCode = etCustomLocation.getText().toString();
                     sendBackResult();
                 }
             }
@@ -183,7 +203,7 @@ public class EditPreferencesDialogFragment extends DialogFragment implements Loc
 
 
     public interface EditPreferencesDialogListener {
-        void onFinishEditDialog(String location, String price);
+        void onFinishEditDialog(String location, String price, String newGroupName);
     }
 
     // Call this method to send the data back to the parent fragment
@@ -191,7 +211,8 @@ public class EditPreferencesDialogFragment extends DialogFragment implements Loc
         // Notice the use of `getTargetFragment` which will be set when the dialog is displayed
         EditPreferencesDialogListener listener = (EditPreferencesDialogListener) getTargetFragment();
         String pricePref = checkPricePref();
-        listener.onFinishEditDialog(zipCode, pricePref);
+        Log.e(TAG, "GROUP NAME FROM DIALOG" + groupName);
+        listener.onFinishEditDialog(zipCode, pricePref, groupName);
         dismiss();
     }
 

@@ -10,7 +10,8 @@
     android:layout_marginEnd="20dp"
     android:layout_marginBottom="20dp"
     android:background="@drawable/android_act"
-    android:elevation="4dp">
+    android:elevation="4dp"
+    android:padding="10dp">
 
     <TextView
         android:id="@+id/tvName"
@@ -18,15 +19,26 @@
         android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
-        android:background="@drawable/background_border"
+        android:textStyle="bold"
         tools:text="Natalia Calvo" />
+
+    <TextView
+        android:id="@+id/tvGroupUsers"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/tvName"
+        android:layout_alignParentStart="true"
+        android:layout_marginStart="0dp"
+        android:layout_marginTop="4dp"
+        tools:text="Yasmine Calvo" />
 
     <Button
         android:id="@+id/btnBeginMatch"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_below="@+id/tvGroupUsers"
         android:layout_alignParentEnd="true"
-        android:layout_centerVertical="true"
+        android:layout_marginTop="10dp"
         android:layout_marginEnd="20dp" />
 
 </RelativeLayout>

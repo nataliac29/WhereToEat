@@ -69,7 +69,6 @@ public class LoginActivity extends AppCompatActivity {
         if (ParseUser.getCurrentUser() != null) {
             goMainActivity();
         }
-
         AccessToken accessToken = AccessToken.getCurrentAccessToken();
         boolean isLoggedIn = accessToken != null && !accessToken.isExpired();
         if (isLoggedIn) {
@@ -81,35 +80,17 @@ public class LoginActivity extends AppCompatActivity {
                         new GraphRequest.GraphJSONObjectCallback() {
                             @Override
                             public void onCompleted(JSONObject object, GraphResponse response) {
-                                Log.e(TAG, "here pt2");
+                                Log.e(TAG, "in token query");
                                 JSONObject json = response.getJSONObject();
                                 Log.e(TAG, json.toString());
                                 if (json != null) {
                                     try {
                                         username = json.getString("email");
+                                        addSharePref(username);
                                     } catch (JSONException e) {
                                         e.printStackTrace();
                                     }
                                     Log.e(TAG, username);
-                                    // check if user has signed in before
-                                    ParseQuery<ParseUser> query = ParseUser.getQuery();
-                                    query.whereEqualTo("username", username);
-                                    // start an asynchronous call for user
-                                    query.findInBackground(new FindCallback<ParseUser>() {
-                                        @Override
-                                        public void done(List<ParseUser> objects, ParseException e) {
-                                            Log.e(TAG, "in done login");
-                                            if (objects.size() == 0) {
-                                                // error, show error text
-                                                Log.e(TAG, "error auto logging in");
-                                                // Add user to Parse user table, using email as username
-                                            } else {
-                                                // if user has already signed up, store id in Shared Preferences
-                                                Log.e(TAG, "here pt56");
-                                                addIdSharePref(objects.get(0).getObjectId());
-                                            }
-                                        }
-                                    });
                                 }
                             }
                         });
@@ -163,7 +144,7 @@ public class LoginActivity extends AppCompatActivity {
                         new GraphRequest.GraphJSONObjectCallback() {
                             @Override
                             public void onCompleted(JSONObject object, GraphResponse response) {
-                                Log.e(TAG, "here pt2");
+                                Log.e(TAG, "in login button callback done");
                                 JSONObject json = response.getJSONObject();
                                 try {
                                     if (json != null) {
@@ -199,6 +180,25 @@ public class LoginActivity extends AppCompatActivity {
 
     }
 
+    private void addSharePref (String email) {
+        Log.e(TAG, "in addsharepref");
+        // add user to shared pref
+        ParseQuery<ParseUser> query = ParseQuery.getQuery("User");
+        query.whereEqualTo("username", email);
+        // start an asynchronous call for user
+        query.findInBackground(new FindCallback<ParseUser>() {
+            @Override
+            public void done(List<ParseUser> objects, ParseException e) {
+
+                if (e == null) {
+                        addIdSharePref(objects.get(0).getObjectId());
+                } else {
+                    Log.e(TAG, "Exception when auto loggin in", e);
+                }
+            }
+        });
+    }
+
     // Native app login
     private void loginUser(String username, String password) {
         Log.i(TAG, "Attempting to login user" + username);
@@ -219,26 +219,31 @@ public class LoginActivity extends AppCompatActivity {
     // check if FB user has logged in before, if not call signupUser to create new Parse user
     // if they have, save id in shared preferences
     private void checkNewUser(String username, String firstName, String lastName, String id){
+        Log.e(TAG, "in check new user");
         ParseQuery<ParseUser> query = ParseUser.getQuery();
         query.whereEqualTo("username", username);
         // start an asynchronous call for posts
-        query.findInBackground((users, e) -> {
-            if (e == null) {
-                Log.e(TAG, "users" + users);
-                // if first time logging in
-                if (users.size() == 0) {
-                    Log.e(TAG, "here");
-                    // Add user to Parse user table, using email as username
-                    signupUser(username, "default", firstName, lastName);
+        query.findInBackground(new FindCallback<ParseUser>() {
+            @Override
+            public void done(List<ParseUser> users, ParseException e) {
+                if (e == null) {
+                    Log.e(TAG, "users" + users);
+                    // if first time logging in
+                    if (users.size() == 0) {
+                        Log.e(TAG, "here");
+                        // Add user to Parse user table, using email as username
+                        signupUser(username, "default", firstName, lastName);
+                    }
+                    else {
+                        Log.e(TAG, "right before setting share pref existing user");
+                        // if user has already signed up, store id in Shared Preferences
+                        addIdSharePref(users.get(0).getObjectId());
+                    }
+                } else {
+                    Log.e(TAG, "check existing user" + e.getMessage());
+                    // Something went wrong.
+                    Toast.makeText(LoginActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
                 }
-                else {
-                    // if user has already signed up, store id in Shared Preferences
-                    addIdSharePref(users.get(0).getObjectId());
-                }
-            } else {
-                Log.e(TAG, "check existing user" + e.getMessage());
-                // Something went wrong.
-                Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
 

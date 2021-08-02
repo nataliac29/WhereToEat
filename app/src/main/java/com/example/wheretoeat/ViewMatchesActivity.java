@@ -18,7 +18,7 @@ import org.json.JSONException;
 public class ViewMatchesActivity extends AppCompatActivity {
 
     JSONArray restaurants;
-    String currFriend;
+    String currGroup;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,18 +28,18 @@ public class ViewMatchesActivity extends AppCompatActivity {
         RecyclerView rvMovies = findViewById(R.id.rvMatches);
         //Create the adapter
         restaurants = new JSONArray();
-        currFriend = getIntent().getStringExtra("friendGroup");
-        ViewMatchesAdapter matchesAdapter = new ViewMatchesAdapter(ViewMatchesActivity.this, restaurants, currFriend);
+        currGroup = getIntent().getStringExtra("friendGroup");
+        ViewMatchesAdapter matchesAdapter = new ViewMatchesAdapter(ViewMatchesActivity.this, restaurants, currGroup);
 
         // set the adapter on the recycler view
         rvMovies.setAdapter(matchesAdapter);
         //Set a layout Manager on the recycler view
         rvMovies.setLayoutManager((new LinearLayoutManager(this)));
 
-        ParseQuery<ParseObject> query = ParseQuery.getQuery("Friends");
+        ParseQuery<ParseObject> query = ParseQuery.getQuery("Group");
         Log.e("ViewMatchActivity", "in update restaurants");
         // Retrieve the object by id
-        query.getInBackground(currFriend, (object, e) -> {
+        query.getInBackground(currGroup, (object, e) -> {
             if (e == null) {
                 Log.e("ViewMatchActivity", object.getJSONArray("mutualMatches").toString());
                 for (int i=0; i <  object.getJSONArray("mutualMatches").length(); i++) {

@@ -30,13 +30,15 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.example.wheretoeat.MainActivity;
-import com.example.wheretoeat.modals.Friends;
 import com.example.wheretoeat.R;
+import com.example.wheretoeat.modals.Matches;
 import com.example.wheretoeat.modals.Restaurant;
 import com.example.wheretoeat.YelpService;
 import com.facebook.AccessToken;
 import com.google.android.material.tabs.TabLayout;
+import com.parse.CountCallback;
 import com.parse.FindCallback;
+import com.parse.GetCallback;
 import com.parse.ParseException;
 import com.parse.ParseObject;
 import com.parse.ParseQuery;
@@ -48,6 +50,8 @@ import org.json.JSONArray;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
@@ -68,10 +72,18 @@ public class AddFragment extends Fragment implements EditPreferencesDialogFragme
     ParseUser currentUser;
     String recipientUsername;
     ParseUser recipientUser;
+    ParseObject currGroup;
+
+    ArrayList<String> usernames;
 
 
     String zipCode;
     String pricePref;
+    String groupName;
+
+    boolean isGroup;
+
+    List<List<String>> allUserGroups = new ArrayList<>();
 
 
     public ArrayList<Restaurant> restaurants = new ArrayList<>();
@@ -79,6 +91,7 @@ public class AddFragment extends Fragment implements EditPreferencesDialogFragme
 
 
     public static final String TAG = "AddFragment";
+
 
 
     public AddFragment() {
@@ -114,7 +127,6 @@ public class AddFragment extends Fragment implements EditPreferencesDialogFragme
             public void onClick(View v) {
                 recipientUsername = etCode.getText().toString();
                 checkFriendExists(recipientUsername);
-//                checkFriendExists(recipientUsername);
             }
         });
 
@@ -124,115 +136,151 @@ public class AddFragment extends Fragment implements EditPreferencesDialogFragme
     // Call this method to launch the edit dialog
     private void showEditDialog() {
         FragmentManager fm = getFragmentManager();
-        EditPreferencesDialogFragment editPreferencesDialogFragment = EditPreferencesDialogFragment.newInstance("Some Title", currentUser, recipientUsername );
+        EditPreferencesDialogFragment editPreferencesDialogFragment = EditPreferencesDialogFragment.newInstance(isGroup);
         // SETS the target fragment for use later when sending results
         editPreferencesDialogFragment.setTargetFragment(AddFragment.this, 300);
         editPreferencesDialogFragment.show(fm, "fragment_edit_name");
     }
 
     @Override
-    public void onFinishEditDialog(String location, String price) {
-        Toast.makeText(getContext(), "Hi, " + location, Toast.LENGTH_SHORT).show();
+    public void onFinishEditDialog(String location, String price, String newGroupName) {
         etCode.setText("");
         zipCode = location;
         pricePref = price;
-        addRecipientUser(recipientUser.getObjectId());
+        groupName = newGroupName;
+        getRestaurants(zipCode);
     }
 
-    int resultSize;
+    boolean groupAlreadyExists = false;
+    boolean onLastGroup;
 
     // returns true if there is already a connection between the users, false if not
     private void checkFriendExists(String recipientUsername) {
         Log.e(TAG, "logged in user: " + currentUser.getObjectId());
-        // query to get recipient user
-        ParseQuery<ParseUser> getRecipientQuery = ParseUser.getQuery();
-        getRecipientQuery.whereEqualTo("username", recipientUsername);
 
-        // query to get relationship if one exists
-        ParseQuery<ParseObject> checkRecipientQuery = ParseQuery.getQuery("Friends");
-        checkRecipientQuery.whereEqualTo("recipient_user", currentUser);
+        usernames = usernamesToList(recipientUsername);
 
+        if (recipientUsername.contains(currentUser.getUsername())) {
+            Toast.makeText(getContext(), "You cannot add yourself, please remove " + currentUser.getUsername(), Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-        ParseQuery<ParseObject> checkInitialQuery = ParseQuery.getQuery("Friends");
-        checkInitialQuery.whereEqualTo("initial_user", currentUser);
+        ParseQuery<ParseUser> query = ParseUser.getQuery();
+        query.whereContainedIn("username", usernames);
 
-
-        List<ParseQuery<ParseObject>> queries = new ArrayList<ParseQuery<ParseObject>>();
-        queries.add(checkRecipientQuery);
-        queries.add(checkInitialQuery);
-
-        ParseQuery<ParseObject> mainQuery = ParseQuery.or(queries);
-
-        // get recipient first, then run second query to see if it returns row
-        getRecipientQuery.findInBackground(new FindCallback<ParseUser>() {
+        query.countInBackground(new CountCallback() {
             @Override
-            public void done(List<ParseUser> objects, ParseException e) {
+            public void done(int count, ParseException e) {
                 if (e == null) {
-                    if (objects.size() != 0) {
-                        Log.e(TAG, "getting recipient user" + objects.toString());
-                        recipientUser = objects.get(0);
+                    if (count != usernames.size()) {
+                        Toast.makeText(getContext(), "user does not exist", Toast.LENGTH_SHORT).show();
+                        return;
+                    } else {
+                        Log.e(TAG, "to checkgroupexists");
+                        checkGroupExists();
+                    }
+                }
+            }
+        });
 
-                        checkRecipientQuery.whereEqualTo("initial_user", recipientUser);
-                        checkInitialQuery.whereEqualTo("recipient_user", recipientUser);
 
-                        mainQuery.findInBackground(new FindCallback<ParseObject>() {
+        // get all groups
+       // for each group, get list of who's in it
+        // check against potential new list
+    }
+
+    private void checkGroupExists() {
+        Log.e(TAG, "in checkgroupexists");
+
+        if (usernames.size() != 1) {
+            isGroup = true;
+            showEditDialog();
+        } else {
+
+
+        //if adding one user, check if that relationship already exists
+        ParseQuery<ParseObject> checkFriends = ParseQuery.getQuery("Matches");
+        checkFriends.whereEqualTo("user", currentUser);
+            onLastGroup = false;
+        // get all groups current user is a part of
+        checkFriends.findInBackground(new FindCallback<ParseObject>() {
+            @Override
+            public void done(List<ParseObject> objects, ParseException e) {
+                if (e == null) {
+                    if (objects.size() == 0) {
+                        showEditDialog();
+                    }
+                    Log.e(TAG, "all your groups:" + objects.toString());
+                    // iterate through every group
+                    for (int i = 0; i < objects.size(); i++) {
+                        Log.e(TAG, "here pt 1");
+
+                        ParseObject group = objects.get(i);
+                        // for each one of these groups, get all the users in each one
+                        ParseQuery<ParseObject> getGroupUsers = ParseQuery.getQuery("Matches");
+                        getGroupUsers.whereEqualTo("groupId", group.getParseObject("groupId"));
+                        getGroupUsers.whereNotEqualTo("user", currentUser);
+                        getGroupUsers.include("user");
+
+                        ArrayList<String> collectGroups = new ArrayList<>();
+
+                        if (i == (objects.size() - 1)) {
+                            Log.e(TAG, "here pt 2");
+                            onLastGroup = true;
+                        }
+                        getGroupUsers.findInBackground(new FindCallback<ParseObject>() {
                             @Override
-                            public void done(List<ParseObject> objects, ParseException e1) {
+                            public void done(List<ParseObject> groups, ParseException e) {
+                                Log.e(TAG, "here pt 3");
                                 if (e == null) {
-                                    Log.e(TAG, "result of check friend exists: " + objects.toString());
-                                    resultSize = objects.size();
-                                    // no relationship already exists, continue with creating row
-                                    if (resultSize == 0) {
-                                        showEditDialog();
-                                    } else {
-                                        Toast.makeText(getContext(), "You have already added this user", Toast.LENGTH_SHORT).show();
+                                    if (groups.size() == 1) {
+                                        if (groups.get(0).getParseObject("user").getString("username").equals(usernames.get(0))){
+                                            Log.e(TAG, "same user");
+                                            groupAlreadyExists = true;
+                                            Toast.makeText(getContext(), "You've already added this user", Toast.LENGTH_SHORT).show();
+                                        }
                                     }
+                                    if (onLastGroup) {
+                                        checkShowDialog();
+                                    }
+                                } else {
+                                    Log.e(TAG, "error getting all users of each group", e);
                                 }
+
                             }
                         });
-
                     }
-                    else {
-                        Toast.makeText(getContext(), "User does not exist", Toast.LENGTH_SHORT).show();
-
-                    }
-                }
-                else {
-                    Log.e(TAG, "error getting recipient user", e);
+                } else {
+                    Log.e(TAG, "error checking friends", e);
                 }
             }
         });
-
+        }
     }
 
-    Friends friend = new Friends();
 
-    private void addRecipientUser(String recipientUsername) {
-        ParseRelation<ParseObject> relation = friend.getRelation("recipient_user");
-        relation.add(recipientUser);
-        // after adding recipient user relation, add initial user relation
-        addInitUser();
-    }
+    // update group with restaurants
 
-    private void addInitUser() {
-        ParseRelation<ParseObject> relation = friend.getRelation("initial_user");
-        relation.add(currentUser);
-        // after relations added, save row to DB in background thread
-        saveFriend();
-    }
+    // row in matches for each member of group
 
-    private void saveFriend() {
-        friend.saveInBackground(new SaveCallback() {
-            @Override
-            public void done(ParseException e) {
-                if (e != null) {
-                    Log.e(TAG, "Error while saving", e);
-                    Toast.makeText(getContext(), "Error while saving!", Toast.LENGTH_SHORT).show();
-                }
-                Log.i(TAG, "Post save was successful");
-                getRestaurants(zipCode);
+    private void saveGroup(JSONArray restaurants) {
+
+        ParseObject newGroup = new ParseObject("Group");
+        newGroup.put("restaurants", restaurants);
+        Log.e(TAG, "GROUPNAME" + groupName);
+        newGroup.put("groupName", groupName);
+
+        // Saves the new object.
+        newGroup.saveInBackground(e -> {
+            if (e==null){
+                currGroup = newGroup;
+                addMatchRowsUser();
+            }else{
+                //Something went wrong
+                Log.e(TAG, "error saving restaurnts", e);
             }
         });
+
     }
 
 
@@ -254,48 +302,66 @@ public class AddFragment extends Fragment implements EditPreferencesDialogFragme
                 for (int i=0; i < restaurants.size(); i++) {
                     jsonArray.put(restaurants.get(i).getJSONObject());
                 }
-                updateRestaurants(jsonArray);
+                saveGroup(jsonArray);
 
             }
         });
     }
-    public void updateRestaurants(JSONArray restaurants) {
-        ParseQuery<ParseObject> query = ParseQuery.getQuery("Friends");
-        query.whereEqualTo("objectId", friend.getObjectId());
-        Log.e(TAG, "in update restaurants");
-        Log.e(TAG, friend.getObjectId());
-        // Retrieve the object by id
-        query.findInBackground(new FindCallback<ParseObject>() {
-            @Override
-            public void done(List<ParseObject> objects, ParseException e) {
-                if (e == null) {
-                    Friends currFriend = (Friends) objects.get(0);
-                    // Update the fields we want to
-                    currFriend.put("restaurants", restaurants);
-                    // All other fields will remain the same
-                    currFriend.saveInBackground(new SaveCallback() {
-                        public void done(ParseException e) {
-                            if (e == null) {
-                                //success, saved!
-                                Log.d("MyApp", "Successfully saved!");
 
-                                TabLayout tabs = (TabLayout)((MainActivity)getActivity()).findViewById(R.id.tabs);
-                                tabs.getTabAt(0).select();
+    private void addMatchRowsUser() {
+        Matches newMatch = new Matches();
+        newMatch.put("user", currentUser);
+        newMatch.put("groupId", currGroup);
 
-                            } else {
-                                //fail to save!
-                                e.printStackTrace();
-                                Log.e(TAG, "saving error", e);
-                            }
-                        }
-                    });
-
-                } else {
-                    // something went wrong
-                    Toast.makeText(getContext(), e.getMessage(), Toast.LENGTH_SHORT).show();
-                }
+        // Saves the new object.
+        newMatch.saveInBackground(error -> {
+            if (error==null){
+                addMatchRows();
+            }else{
+                //Something went wrong
+                Log.e(TAG, "error saving restaurnts", error);
             }
         });
+    }
+
+    private void addMatchRows() {
+        for (int i = 0; i < usernames.size(); i++) {
+            // get each user from username
+            ParseQuery<ParseUser> query = ParseUser.getQuery();
+            query.whereEqualTo("username", usernames.get(i));
+
+            query.getFirstInBackground(new GetCallback<ParseUser>() {
+                @Override
+                public void done(ParseUser object, ParseException e) {
+                    if (e == null) {
+                        if (object != null) {
+                            Matches newMatch = new Matches();
+                            newMatch.put("user", object);
+                            newMatch.put("groupId", currGroup);
+
+                            // Saves the new object.
+                            newMatch.saveInBackground(error -> {
+                                if (error==null){
+                                    return;
+                                }else{
+                                    //Something went wrong
+                                    Log.e(TAG, "error saving restaurnts", error);
+                                }
+                            });
+                        }
+                    } else {
+                        Log.e(TAG, "error getting new user", e);
+                    }
+                }
+            });
+
+            if (i == (usernames.size() - 1)) {
+                Toast.makeText(getContext(), "Success!", Toast.LENGTH_SHORT).show();
+                TabLayout tabs = (TabLayout)((MainActivity)getActivity()).findViewById(R.id.tabs);
+                tabs.getTabAt(0).select();
+
+            }
+        }
     }
 
 
@@ -326,4 +392,33 @@ public class AddFragment extends Fragment implements EditPreferencesDialogFragme
             }
         }
     }
+
+    private ArrayList<String> usernamesToList(String usernames) {
+        // step one : converting comma separate String to array of String
+        String[] elements = usernames.replaceAll("\\s", "").split(",");
+        // step two : convert String array to list of String
+        List<String> fixedLenghtList = Arrays.asList(elements);
+        // step three : copy fixed list to an ArrayList
+        return new ArrayList<String>(fixedLenghtList);
+    }
+
+    private boolean sameUsers(ArrayList potentialUsernames) {
+        Collections.sort(potentialUsernames);
+        Collections.sort(usernames);
+        return (usernames.equals(potentialUsernames));
+    }
+
+    private void checkShowDialog() {
+        if (!groupAlreadyExists) {
+            showEditDialog();
+        }
+    }
 }
+
+/*
+
+                                    if (sameUsers(collectGroups)) {
+                                        groupAlreadyExists = true;
+                                        Toast.makeText(getContext(), "This group already exists", Toast.LENGTH_SHORT).show();
+                                    }
+ */
