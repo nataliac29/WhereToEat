@@ -236,7 +236,6 @@ public class MatchActivity extends AppCompatActivity implements RestaurantAdapte
 
         ParseQuery<ParseObject> findAllMatches = ParseQuery.getQuery("Matches");
         findAllMatches.whereEqualTo("groupId", currGroupObject);
-        findAllMatches.whereNotEqualTo("matches", null);
 
         findAllMatches.findInBackground(new FindCallback<ParseObject>() {
             @Override

@@ -17,6 +17,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import com.example.wheretoeat.ParseService.MatchesQuery;
 import com.example.wheretoeat.adapters.FriendsAdapter;
 import com.example.wheretoeat.R;
 import com.facebook.AccessToken;
@@ -29,7 +30,7 @@ import com.parse.ParseUser;
 import java.util.ArrayList;
 import java.util.List;
 
-public class GroupsFragment extends Fragment {
+public class GroupsFragment extends Fragment implements MatchesQuery.getCurrUserGroupsInterface {
 
 
     public GroupsFragment() {
@@ -37,15 +38,6 @@ public class GroupsFragment extends Fragment {
     }
 
 
-    /*
-
-    1. query Matches, get all group id's
-    2. for each group id, also get user info
-
-
-
-
-     */
     RecyclerView rvFriends;
 
     private FriendsAdapter adapter;
@@ -82,7 +74,7 @@ public class GroupsFragment extends Fragment {
         rvFriends.setAdapter(adapter);
         rvFriends.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        queryFriends();
+        getCurrUserGroups();
         // Lookup the swipe container view
         swipeContainer =  view.findViewById(R.id.swipeContainer);
         // Setup refresh listener which triggers new data loading
@@ -92,7 +84,7 @@ public class GroupsFragment extends Fragment {
                 // Your code to refresh the list here.
                 // Make sure you call swipeContainer.setRefreshing(false)
                 // once the network request has completed successfully.
-                queryFriends();
+                getCurrUserGroups();
             }
         });
         // Configure the refreshing colors
@@ -103,44 +95,37 @@ public class GroupsFragment extends Fragment {
 
 
     }
-
-
-
-    private void queryFriends() {
+    // callback function for when query is finished, set adapter
+    @Override
+    public void onFinishGetCurrUserGroups(List<ParseObject> objects, ParseException e) {
         collectGroups = new ArrayList<>();
-
-        ParseQuery<ParseObject> getGroups = ParseQuery.getQuery("Matches");
-        getGroups.whereEqualTo("user", currentUser);
-        getGroups.include("groupId");
-        getGroups.orderByDescending("createdAt");
-
-        getGroups.findInBackground(new FindCallback<ParseObject>() {
-            @Override
-            public void done(List<ParseObject> objects, ParseException e) {
-               if (e == null) {
-                   if (objects.size() == 0) {
-                        Toast.makeText(getContext(), "Click the plus tab to add friends!", Toast.LENGTH_SHORT).show();
-                        adapter.clear();
-                        adapter.notifyDataSetChanged();
-                        swipeContainer.setRefreshing(false);
-                        return;
-                    } else {
-                       for (ParseObject parseObject : objects) {
-                           Log.e(TAG, parseObject.getParseObject("groupId").toString());
-                           collectGroups.add(parseObject.getParseObject("groupId"));
-                           Log.e(TAG, "collectGroups" + collectGroups.toString());
-                       }
-                       adapter.clear();
-                       Log.e(TAG, "all groups: " + collectGroups.toString());
-                       allGroups.addAll(collectGroups);
-                       adapter.notifyDataSetChanged();
-                       swipeContainer.setRefreshing(false);
-                   }
-               } else {
-                   Log.e(TAG, "error", e);
-               }
+        if (e == null) {
+            if (objects.size() == 0) {
+                Toast.makeText(getContext(), "Click the plus tab to add friends!", Toast.LENGTH_SHORT).show();
+                adapter.clear();
+                adapter.notifyDataSetChanged();
+                swipeContainer.setRefreshing(false);
+                return;
+            } else {
+                for (ParseObject parseObject : objects) {
+                    Log.e(TAG, parseObject.getParseObject("groupId").toString());
+                    collectGroups.add(parseObject.getParseObject("groupId"));
+                    Log.e(TAG, "collectGroups" + collectGroups.toString());
+                }
+                adapter.clear();
+                Log.e(TAG, "all groups: " + collectGroups.toString());
+                allGroups.addAll(collectGroups);
+                adapter.notifyDataSetChanged();
+                swipeContainer.setRefreshing(false);
             }
-        });
+        } else {
+            Log.e(TAG, "error", e);
+        }
+    }
+
+    private void getCurrUserGroups() {
+        // get the current user's groups, include the group object, order by newest group first
+        MatchesQuery.getCurrUserGroups(currentUser, true, true, GroupsFragment.this);
     }
 
     private void getCurrentUser() {

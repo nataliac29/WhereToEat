@@ -30,6 +30,7 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.example.wheretoeat.MainActivity;
+import com.example.wheretoeat.ParseService.MatchesQuery;
 import com.example.wheretoeat.R;
 import com.example.wheretoeat.modals.Matches;
 import com.example.wheretoeat.modals.Restaurant;
@@ -60,7 +61,12 @@ import okhttp3.Callback;
 import okhttp3.Response;
 
 
-public class AddFragment extends Fragment implements EditPreferencesDialogFragment.EditPreferencesDialogListener {
+public class AddFragment extends Fragment implements
+        EditPreferencesDialogFragment.EditPreferencesDialogListener,
+        MatchesQuery.getCurrUserGroupsInterface,
+        MatchesQuery.getUsersInGroupInterface,
+        MatchesQuery.checkUsernamesInterface
+{
     /*
     button listener
         update parse table
@@ -165,23 +171,7 @@ public class AddFragment extends Fragment implements EditPreferencesDialogFragme
             return;
         }
 
-        ParseQuery<ParseUser> query = ParseUser.getQuery();
-        query.whereContainedIn("username", usernames);
-
-        query.countInBackground(new CountCallback() {
-            @Override
-            public void done(int count, ParseException e) {
-                if (e == null) {
-                    if (count != usernames.size()) {
-                        Toast.makeText(getContext(), "user does not exist", Toast.LENGTH_SHORT).show();
-                        return;
-                    } else {
-                        Log.e(TAG, "to checkgroupexists");
-                        checkGroupExists();
-                    }
-                }
-            }
-        });
+        MatchesQuery.checkUsernamesValid(usernames, AddFragment.this);
 
 
         // get all groups
@@ -189,75 +179,69 @@ public class AddFragment extends Fragment implements EditPreferencesDialogFragme
         // check against potential new list
     }
 
-    private void checkGroupExists() {
-        Log.e(TAG, "in checkgroupexists");
+    @Override
+    public void onFinishCheckUsernames(int count, ParseException e) {
+        if (e == null) {
+            if (count != usernames.size()) {
+                Toast.makeText(getContext(), "user does not exist", Toast.LENGTH_SHORT).show();
+                return;
+            } else {
+                Log.e(TAG, "to checkgroupexists");
+                checkGroupExists();
+            }
+        }
+    }
 
+    private void checkGroupExists() {
         if (usernames.size() != 1) {
             isGroup = true;
             showEditDialog();
         } else {
-
-
-        //if adding one user, check if that relationship already exists
-        ParseQuery<ParseObject> checkFriends = ParseQuery.getQuery("Matches");
-        checkFriends.whereEqualTo("user", currentUser);
-            onLastGroup = false;
-        // get all groups current user is a part of
-        checkFriends.findInBackground(new FindCallback<ParseObject>() {
-            @Override
-            public void done(List<ParseObject> objects, ParseException e) {
-                if (e == null) {
-                    if (objects.size() == 0) {
-                        showEditDialog();
-                    }
-                    Log.e(TAG, "all your groups:" + objects.toString());
-                    // iterate through every group
-                    for (int i = 0; i < objects.size(); i++) {
-                        Log.e(TAG, "here pt 1");
-
-                        ParseObject group = objects.get(i);
-                        // for each one of these groups, get all the users in each one
-                        ParseQuery<ParseObject> getGroupUsers = ParseQuery.getQuery("Matches");
-                        getGroupUsers.whereEqualTo("groupId", group.getParseObject("groupId"));
-                        getGroupUsers.whereNotEqualTo("user", currentUser);
-                        getGroupUsers.include("user");
-
-                        ArrayList<String> collectGroups = new ArrayList<>();
-
-                        if (i == (objects.size() - 1)) {
-                            Log.e(TAG, "here pt 2");
-                            onLastGroup = true;
-                        }
-                        getGroupUsers.findInBackground(new FindCallback<ParseObject>() {
-                            @Override
-                            public void done(List<ParseObject> groups, ParseException e) {
-                                Log.e(TAG, "here pt 3");
-                                if (e == null) {
-                                    if (groups.size() == 1) {
-                                        if (groups.get(0).getParseObject("user").getString("username").equals(usernames.get(0))){
-                                            Log.e(TAG, "same user");
-                                            groupAlreadyExists = true;
-                                            Toast.makeText(getContext(), "You've already added this user", Toast.LENGTH_SHORT).show();
-                                        }
-                                    }
-                                    if (onLastGroup) {
-                                        checkShowDialog();
-                                    }
-                                } else {
-                                    Log.e(TAG, "error getting all users of each group", e);
-                                }
-
-                            }
-                        });
-                    }
-                } else {
-                    Log.e(TAG, "error checking friends", e);
-                }
-            }
-        });
+            MatchesQuery.getCurrUserGroups(currentUser, false, false, AddFragment.this);
         }
     }
 
+    @Override
+    public void onFinishGetCurrUserGroups(List<ParseObject> objects, ParseException e) {
+        if (e == null) {
+            if (objects.size() == 0) {
+                showEditDialog();
+            }
+            // iterate through every group
+            onLastGroup = false;
+            for (int i = 0; i < objects.size(); i++) {
+
+                if (i == (objects.size() - 1)) {
+                    Log.e(TAG, "here pt 2");
+                    onLastGroup = true;
+                }
+
+                ParseObject group = objects.get(i);
+                MatchesQuery.getUsersInGroup(currentUser, group, true, true, AddFragment.this, null );
+
+            }
+        } else {
+            Log.e(TAG, "error checking friends", e);
+        }
+    }
+
+    @Override
+    public void onFinishGetUsersInGroup(List<ParseObject> objects, ParseException e) {
+        if (e == null) {
+            if (objects.size() == 1) {
+                if (objects.get(0).getParseObject("user").getString("username").equals(usernames.get(0))){
+                    Log.e(TAG, "same user");
+                    groupAlreadyExists = true;
+                    Toast.makeText(getContext(), "You've already added this user", Toast.LENGTH_SHORT).show();
+                }
+            }
+            if (onLastGroup) {
+                checkShowDialog();
+            }
+        } else {
+            Log.e(TAG, "error getting all users of each group", e);
+        }
+    }
 
     // update group with restaurants
 
