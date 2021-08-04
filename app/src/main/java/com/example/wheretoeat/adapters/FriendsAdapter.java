@@ -9,11 +9,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.wheretoeat.ParseService.MatchesQuery;
 import com.example.wheretoeat.modals.Friends;
 import com.example.wheretoeat.MatchActivity;
 import com.example.wheretoeat.R;
@@ -39,8 +41,14 @@ public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.ViewHold
 
 
     private Context context;
+
+    // list of current user's groups
     private List<ParseObject> groups;
+
     ParseUser currentUser;
+
+    // store instance of Parse helper classes
+    MatchesQuery matchesQuery;
 
 
     public FriendsAdapter(Context context, List<ParseObject> users) {
@@ -51,6 +59,8 @@ public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.ViewHold
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        getCurrentUser();
+        matchesQuery = MatchesQuery.getInstance();
         View view = LayoutInflater.from(context).inflate(R.layout.item_friend, parent, false);
         return new ViewHolder(view);
     }
@@ -71,18 +81,14 @@ public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.ViewHold
         notifyDataSetChanged();
     }
 
-    // Add a list of items -- change to type used
-    public void addAll(List<ParseObject> list) {
-        groups.addAll(list);
-        notifyDataSetChanged();
-    }
 
-    class ViewHolder extends RecyclerView.ViewHolder {
+    class ViewHolder extends RecyclerView.ViewHolder implements MatchesQuery.getUsersInGroupInterface {
 
         private TextView tvName;
         private TextView tvGroupUsers;
         private Button btnBeginMatch;
 
+        // stores Parse Object of current group
         private ParseObject currGroup;
 
 
@@ -101,18 +107,24 @@ public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.ViewHold
             int position = getAdapterPosition();
             // make sure the position is valid, i.e. actually exists in the view
             if (position != RecyclerView.NO_POSITION) {
-                // get the movie at the position, this won't work if the class is static
+                // start activity based button text, which is set based on state of group's matches
+
+                // if current user has not matches for this group
                 if (btnBeginMatch.getText().equals("START MATCHING")) {
-                    Log.e(TAG, "button text check");
+                    // Create intent to begin
                     Intent intent = new Intent(context, MatchActivity.class);
-                    // serialize the movie using parceler, use its short name as a key
+                    // add group's ID as extra
                     intent.putExtra("friendGroup", currGroup.getObjectId());
-                    // show the activity
+                    // start matching activity
                     context.startActivity(intent);
                 }
                 else {
-                    Log.e(TAG, "in start matching button");
+                    // If not "start matching", button has to be to view group's matches
+                    // Button disabled if "waiting for other matches"
+
+                    // set intent for View Matches activity
                     Intent intent = new Intent(context, ViewMatchesActivity.class);
+                    // add group's ID as extra
                     intent.putExtra("friendGroup", currGroup.getObjectId());
                     // show the activity
                     context.startActivity(intent);
@@ -121,97 +133,88 @@ public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.ViewHold
         }
 
 
-        public void bind(ParseObject group) {
-            Log.e(TAG, "in bind");
 
+
+        public void bind(ParseObject group) {
+            // store group in global variable
             currGroup = group;
 
-            List<ParseUser> groupUsers = new ArrayList<>();
-
-
-            if (ParseUser.getCurrentUser() != null) {
-                currentUser = ParseUser.getCurrentUser();
-            }
-            AccessToken accessToken = AccessToken.getCurrentAccessToken();
-            boolean isLoggedIn = accessToken != null && !accessToken.isExpired();
-            if (isLoggedIn) {
-                SharedPreferences sharedPreferences = context.getSharedPreferences("FB_userId", Context.MODE_PRIVATE);
-                String currentUserId = sharedPreferences.getString("facebook_user_id", null);
-                ParseQuery<ParseUser> query = ParseUser.getQuery();
-                query.whereEqualTo("objectId", currentUserId);
-                // start an asynchronous call for posts
-                query.findInBackground((users, e) -> {
-                    if (e == null) {
-                        currentUser = users.get(0);
-                    } else {
-                        Log.e(TAG, "Error getting Parse user" + e.getMessage());
-                    }
-                });
-            }
-
+            // reset group name to visible in case disabled with previous group
             tvName.setVisibility(View.VISIBLE);
 
-            ParseQuery<ParseObject> getOtherUsers = ParseQuery.getQuery("Matches");
-            getOtherUsers.whereEqualTo("groupId", group);
-            getOtherUsers.include("user");
 
+            matchesQuery.getUsersInGroup(currentUser, group, true, false, this);
 
-            getOtherUsers.findInBackground(new FindCallback<ParseObject>() {
-                @Override
-                public void done(List<ParseObject> objects, ParseException e) {
-                    if (e == null) {
-                        for (ParseObject parseObject : objects) {
-                            if (parseObject.getParseUser("user").getObjectId().equals(currentUser.getObjectId())) {
-                                Log.e(TAG, "matches user");
-                                if (parseObject.getJSONArray("matches") == null) {
-                                    Log.e(TAG, "matches null");
-                                    ((AppCompatActivity) context).runOnUiThread(new Runnable() {
-                                        @Override
-                                            public void run() {
-                                            btnBeginMatch.setText("START MATCHING");
-                                            btnBeginMatch.setEnabled(true);
-                                        }
-                                    });
-                                }
-                                else if (group.getJSONArray("mutualMatches") != null) {
-                                    Log.e(TAG, "mutual matches null");
-                                    ((AppCompatActivity) context).runOnUiThread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            btnBeginMatch.setText("VIEW MATCHES");
-                                            btnBeginMatch.setEnabled(true);
-                                        }
-                                    });
-                                }
-                                else {
-                                    ((AppCompatActivity) context).runOnUiThread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            btnBeginMatch.setText("WAITING FOR MATCHES");
-                                            btnBeginMatch.setEnabled(false);
-                                        }
-                                    });
-                                }
-
-                            } else {
-                                if (objects.size() == 2) {
-                                    tvName.setVisibility(View.GONE);
-                                } else{
-                                    tvName.setText(group.get("groupName").toString());
-                                }
-                                groupUsers.add(parseObject.getParseUser("user"));
-                            }
-                        }
-                        tvGroupUsers.setText(getGroupNames(groupUsers));
-                    } else {
-                        Log.e(TAG, "error getting other users in group", e);
-                    }
-                }
-            });
 
         }
+
+        @Override
+        public void onFinishGetUsersInGroup(List<ParseObject> objects, ParseException e) {
+            if (e == null) {
+
+                // new array to store other users in group
+                List<ParseUser> groupUsers = new ArrayList<>();
+
+                // iterate through all users in group
+                for (ParseObject parseObject : objects) {
+                    // if iterating on current user
+                    if (parseObject.getParseUser("user").getObjectId().equals(currentUser.getObjectId())) {
+                        // if current user has not started matching
+                        if (parseObject.getJSONArray("matches") == null) {
+                            // make UI changes on UI thread
+                            ((AppCompatActivity) context).runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    btnBeginMatch.setText("START MATCHING");
+                                    btnBeginMatch.setEnabled(true);
+                                }
+                            });
+                        }
+                        // if the entire group has finished matching (mutual matches recorded)
+                        else if (currGroup.getJSONArray("mutualMatches") != null) {
+                            ((AppCompatActivity) context).runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    btnBeginMatch.setText("VIEW MATCHES");
+                                    btnBeginMatch.setEnabled(true);
+                                }
+                            });
+                        }
+                        // if user has started matching, but no mutual matches recorded, then group is not finished
+                        else {
+                            ((AppCompatActivity) context).runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    btnBeginMatch.setText("WAITING FOR MATCHES");
+                                    // nothing to do while waiting for other's matches
+                                    btnBeginMatch.setEnabled(false);
+                                }
+                            });
+                        }
+
+                    } else {
+                        // if group is only 2 people, remove group name text view from view
+                        if (objects.size() == 2) {
+                            tvName.setVisibility(View.GONE);
+
+                            // if group has 3+ people display group name
+                        } else {
+                            tvName.setText(currGroup.get("groupName").toString());
+                        }
+
+                        // add other users to groupUsers to be displayed with group info
+                        groupUsers.add(parseObject.getParseUser("user"));
+                    }
+                }
+                // display first and last names of every user in group
+                tvGroupUsers.setText(getGroupNames(groupUsers));
+            } else {
+                Toast.makeText(FriendsAdapter.this.context, "Error getting groups", Toast.LENGTH_SHORT).show();
+            }
+        }
+
+
         private String getGroupNames(List<ParseUser> usersList) {
-            Log.e(TAG, "in get group names");
             String names = "";
             for (int i = 0; i < usersList.size(); i++) {
                 if (i == 0) {
@@ -223,5 +226,33 @@ public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.ViewHold
             return names;
         }
   }
+
+
+    private void getCurrentUser() {
+        if (ParseUser.getCurrentUser() != null) {
+            currentUser = ParseUser.getCurrentUser();
+        } else {
+            AccessToken accessToken = AccessToken.getCurrentAccessToken();
+            boolean isLoggedIn = accessToken != null && !accessToken.isExpired();
+            if (isLoggedIn) {
+                SharedPreferences sharedPreferences = this.context.getSharedPreferences("FB_userId", Context.MODE_PRIVATE);
+                String currentUserId = sharedPreferences.getString("facebook_user_id", null);
+                ParseQuery<ParseUser> query = ParseUser.getQuery();
+                query.whereEqualTo("objectId", currentUserId);
+                // start an asynchronous call for posts
+                query.findInBackground(new FindCallback<ParseUser>() {
+                    @Override
+                    public void done(List<ParseUser> objects, ParseException e) {
+                        if (e == null) {
+                            currentUser = objects.get(0);
+                        } else {
+                            Log.e(TAG, "Error getting Parse user" + e.getMessage());
+                        }
+
+                    }
+                });
+            }
+        }
+    }
 
 }

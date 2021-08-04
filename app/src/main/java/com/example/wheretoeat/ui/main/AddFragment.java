@@ -30,7 +30,9 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.example.wheretoeat.MainActivity;
+import com.example.wheretoeat.ParseService.GroupQuery;
 import com.example.wheretoeat.ParseService.MatchesQuery;
+import com.example.wheretoeat.ParseService.UserQuery;
 import com.example.wheretoeat.R;
 import com.example.wheretoeat.modals.Matches;
 import com.example.wheretoeat.modals.Restaurant;
@@ -65,38 +67,57 @@ public class AddFragment extends Fragment implements
         EditPreferencesDialogFragment.EditPreferencesDialogListener,
         MatchesQuery.getCurrUserGroupsInterface,
         MatchesQuery.getUsersInGroupInterface,
-        MatchesQuery.checkUsernamesInterface
+        MatchesQuery.checkUsernamesInterface,
+        UserQuery.getUserFromUsernameInterface,
+        GroupQuery.newGroupInterface
 {
-    /*
-    button listener
-        update parse table
-        g back to groups table, add that friend to top of list
-    */
 
+    public static final String TAG = "AddFragment";
+
+    ParseUser currentUser;
+
+    // to get list of usernames user has added
     Button btnCode;
     EditText etCode;
-    ParseUser currentUser;
-    String recipientUsername;
-    ParseUser recipientUser;
+
+    // String from user, usernames of users to add
+    String recipientUsernames;
+
+    // to store new group
     ParseObject currGroup;
 
+    // List of usernames to add to group
     ArrayList<String> usernames;
 
+    // Store new users of group as ParseUsers
+    ArrayList<ParseUser> newGroupUsers;
 
+
+    // user preferences for group
     String zipCode;
     String pricePref;
     String groupName;
 
+    // keeps track of whether user is attempting to add more than one person
     boolean isGroup;
 
-    List<List<String>> allUserGroups = new ArrayList<>();
+    // keep track of whether user adding already added friend
+    boolean groupAlreadyExists;
+
+    // when iterating through user's existing groups, check if on last group
+    boolean onLastGroup;
 
 
+
+    // stores list of restaurants all members of group will vote on
     public ArrayList<Restaurant> restaurants = new ArrayList<>();
 
 
+    // store instances of Parse helper classes
+    MatchesQuery matchQuery;
+    UserQuery userQuery;
+    GroupQuery groupQuery;
 
-    public static final String TAG = "AddFragment";
 
 
 
@@ -108,6 +129,7 @@ public class AddFragment extends Fragment implements
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // get current user from beginning
         getCurrentUser();
 
     }
@@ -124,6 +146,10 @@ public class AddFragment extends Fragment implements
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        matchQuery = MatchesQuery.getInstance( );
+        userQuery = UserQuery.getInstance();
+        groupQuery = GroupQuery.getInstance();
+
         etCode = view.findViewById(R.id.etCode);
         btnCode = view.findViewById(R.id.btnCode);
 
@@ -131,8 +157,9 @@ public class AddFragment extends Fragment implements
         btnCode.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                recipientUsername = etCode.getText().toString();
-                checkFriendExists(recipientUsername);
+                recipientUsernames = etCode.getText().toString();
+                // start validating usernames by checking if all usernames inputted exist + aren't current user
+                checkUsernames(recipientUsernames);
             }
         });
 
@@ -148,89 +175,93 @@ public class AddFragment extends Fragment implements
         editPreferencesDialogFragment.show(fm, "fragment_edit_name");
     }
 
+    // once user is done with dialog
     @Override
     public void onFinishEditDialog(String location, String price, String newGroupName) {
         etCode.setText("");
         zipCode = location;
         pricePref = price;
         groupName = newGroupName;
+
+        // once restaurant preferences set, fetch restaurants
         getRestaurants(zipCode);
     }
 
-    boolean groupAlreadyExists = false;
-    boolean onLastGroup;
-
     // returns true if there is already a connection between the users, false if not
-    private void checkFriendExists(String recipientUsername) {
-        Log.e(TAG, "logged in user: " + currentUser.getObjectId());
-
+    private void checkUsernames(String recipientUsername) {
+        // convert string from user into array of usernames
         usernames = usernamesToList(recipientUsername);
 
+        // if one of the added usernames is the current user, notify user
         if (recipientUsername.contains(currentUser.getUsername())) {
             Toast.makeText(getContext(), "You cannot add yourself, please remove " + currentUser.getUsername(), Toast.LENGTH_SHORT).show();
             return;
         }
 
-        MatchesQuery.checkUsernamesValid(usernames, AddFragment.this);
-
-
-        // get all groups
-       // for each group, get list of who's in it
-        // check against potential new list
+        // check all usernames correspond to a user
+        matchQuery.checkUsernamesValid(usernames, this);
     }
 
     @Override
     public void onFinishCheckUsernames(int count, ParseException e) {
         if (e == null) {
+            // if not all usernames are valid, notify user
             if (count != usernames.size()) {
                 Toast.makeText(getContext(), "user does not exist", Toast.LENGTH_SHORT).show();
-                return;
             } else {
-                Log.e(TAG, "to checkgroupexists");
+                // if only adding one user, will check if that user has already been added
                 checkGroupExists();
             }
         }
     }
 
     private void checkGroupExists() {
+        // if adding more than one user, don't check if relation already exists (can have multiple groups of same users)
         if (usernames.size() != 1) {
             isGroup = true;
+            // launch preferences dialog fragment
             showEditDialog();
         } else {
-            MatchesQuery.getCurrUserGroups(currentUser, false, false, AddFragment.this);
+            // query for all the current users groups
+            matchQuery.getCurrUserGroups(currentUser, false, false, this);
         }
     }
 
     @Override
     public void onFinishGetCurrUserGroups(List<ParseObject> objects, ParseException e) {
         if (e == null) {
+            // if user doesn't have any other groups, go straight to preferences
             if (objects.size() == 0) {
                 showEditDialog();
             }
-            // iterate through every group
+
             onLastGroup = false;
+
+            // iterate through every group
             for (int i = 0; i < objects.size(); i++) {
 
                 if (i == (objects.size() - 1)) {
-                    Log.e(TAG, "here pt 2");
+                    // mark when on last group to check if any group was repeated
                     onLastGroup = true;
                 }
 
                 ParseObject group = objects.get(i);
-                MatchesQuery.getUsersInGroup(currentUser, group, true, true, AddFragment.this, null );
+                // get the other users in the same group as user
+                matchQuery.getUsersInGroup(currentUser, group, true, true, this);
 
             }
         } else {
-            Log.e(TAG, "error checking friends", e);
+            Toast.makeText(getContext(), "Error getting your groups.", Toast.LENGTH_SHORT).show();
         }
     }
 
     @Override
     public void onFinishGetUsersInGroup(List<ParseObject> objects, ParseException e) {
         if (e == null) {
+            // if this is a 2 person group
             if (objects.size() == 1) {
+                // check if the other user matches the user that was to be added
                 if (objects.get(0).getParseObject("user").getString("username").equals(usernames.get(0))){
-                    Log.e(TAG, "same user");
                     groupAlreadyExists = true;
                     Toast.makeText(getContext(), "You've already added this user", Toast.LENGTH_SHORT).show();
                 }
@@ -239,37 +270,21 @@ public class AddFragment extends Fragment implements
                 checkShowDialog();
             }
         } else {
-            Log.e(TAG, "error getting all users of each group", e);
+            Toast.makeText(getContext(), "Error fetching your groups", Toast.LENGTH_SHORT).show();
         }
     }
 
-    // update group with restaurants
-
-    // row in matches for each member of group
-
-    private void saveGroup(JSONArray restaurants) {
-
-        ParseObject newGroup = new ParseObject("Group");
-        newGroup.put("restaurants", restaurants);
-        Log.e(TAG, "GROUPNAME" + groupName);
-        newGroup.put("groupName", groupName);
-
-        // Saves the new object.
-        newGroup.saveInBackground(e -> {
-            if (e==null){
-                currGroup = newGroup;
-                addMatchRowsUser();
-            }else{
-                //Something went wrong
-                Log.e(TAG, "error saving restaurnts", e);
-            }
-        });
-
+    private void checkShowDialog() {
+        // if groupAlreadyExists was never set to true, go ahead and show dialog
+        if (!groupAlreadyExists) {
+            showEditDialog();
+        }
     }
 
 
     private void getRestaurants(String location) {
         final YelpService yelpService = new YelpService();
+        // get restaurants based on preferences
         yelpService.findRestaurants(location, pricePref, new Callback() {
 
             @Override
@@ -279,71 +294,64 @@ public class AddFragment extends Fragment implements
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
-//                String jsonData = response.body().string();
-//                Log.e(TAG, jsonData);
                 restaurants = yelpService.processResults(response);
                 JSONArray jsonArray = new JSONArray();
+                // add each restaurant to array
                 for (int i=0; i < restaurants.size(); i++) {
+                    // getJSONObject returns only the information from each restaurant we want to save
                     jsonArray.put(restaurants.get(i).getJSONObject());
                 }
-                saveGroup(jsonArray);
 
+                // save these restaurants in new row in Group table
+                newGroup(jsonArray);
             }
         });
     }
 
-    private void addMatchRowsUser() {
-        Matches newMatch = new Matches();
-        newMatch.put("user", currentUser);
-        newMatch.put("groupId", currGroup);
+    private void newGroup(JSONArray restaurants) {
+        groupQuery.newGroup(restaurants, groupName, this);
+    }
 
-        // Saves the new object.
-        newMatch.saveInBackground(error -> {
-            if (error==null){
-                addMatchRows();
-            }else{
-                //Something went wrong
-                Log.e(TAG, "error saving restaurnts", error);
-            }
-        });
+    @Override
+    public void onFinishNewGroup(ParseException e, ParseObject newGroup) {
+        if (e == null){
+
+            // store new group
+            currGroup = newGroup;
+
+            // get ParseUser object corresponding to each username
+            getUsersFromUsername();
+
+        } else {
+            Toast.makeText(getContext(), "Error creating new group", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+
+    private void getUsersFromUsername() {
+        // get user objects from list of usernames
+        userQuery.getUserFromUsername(usernames, this);
+    }
+
+    @Override
+    public void onFinishGetUserFromUsername(List<ParseUser> objects, ParseException e) {
+        // store all users of group
+        newGroupUsers = new ArrayList<>();
+        newGroupUsers.add(currentUser);
+        newGroupUsers.addAll(objects);
+        // save new row in Match table for each user
+        addMatchRows();
     }
 
     private void addMatchRows() {
-        for (int i = 0; i < usernames.size(); i++) {
-            // get each user from username
-            ParseQuery<ParseUser> query = ParseUser.getQuery();
-            query.whereEqualTo("username", usernames.get(i));
-
-            query.getFirstInBackground(new GetCallback<ParseUser>() {
-                @Override
-                public void done(ParseUser object, ParseException e) {
-                    if (e == null) {
-                        if (object != null) {
-                            Matches newMatch = new Matches();
-                            newMatch.put("user", object);
-                            newMatch.put("groupId", currGroup);
-
-                            // Saves the new object.
-                            newMatch.saveInBackground(error -> {
-                                if (error==null){
-                                    return;
-                                }else{
-                                    //Something went wrong
-                                    Log.e(TAG, "error saving restaurnts", error);
-                                }
-                            });
-                        }
-                    } else {
-                        Log.e(TAG, "error getting new user", e);
-                    }
-                }
-            });
-
+        for (int i = 0; i < newGroupUsers.size(); i++) {
+            // add row in Match table to keep track of matches for particular group
+            matchQuery.addMatchesRow(newGroupUsers.get(i), currGroup);
+            // when on last user, switch tabs to home (groups) tab and notify user
             if (i == (usernames.size() - 1)) {
                 Toast.makeText(getContext(), "Success!", Toast.LENGTH_SHORT).show();
                 TabLayout tabs = (TabLayout)((MainActivity)getActivity()).findViewById(R.id.tabs);
                 tabs.getTabAt(0).select();
-
             }
         }
     }
@@ -358,7 +366,6 @@ public class AddFragment extends Fragment implements
             if (isLoggedIn) {
                 SharedPreferences sharedPreferences = getContext().getSharedPreferences("FB_userId", Context.MODE_PRIVATE);
                 String currentUserId = sharedPreferences.getString("facebook_user_id", null);
-                Log.e(TAG, "SHARED PREF ID" + currentUserId);
                 ParseQuery<ParseUser> query = ParseUser.getQuery();
                 query.whereEqualTo("objectId", currentUserId);
                 // start an asynchronous call for posts
@@ -385,24 +392,4 @@ public class AddFragment extends Fragment implements
         // step three : copy fixed list to an ArrayList
         return new ArrayList<String>(fixedLenghtList);
     }
-
-    private boolean sameUsers(ArrayList potentialUsernames) {
-        Collections.sort(potentialUsernames);
-        Collections.sort(usernames);
-        return (usernames.equals(potentialUsernames));
-    }
-
-    private void checkShowDialog() {
-        if (!groupAlreadyExists) {
-            showEditDialog();
-        }
-    }
 }
-
-/*
-
-                                    if (sameUsers(collectGroups)) {
-                                        groupAlreadyExists = true;
-                                        Toast.makeText(getContext(), "This group already exists", Toast.LENGTH_SHORT).show();
-                                    }
- */
