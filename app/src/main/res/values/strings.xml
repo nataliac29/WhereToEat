@@ -8,6 +8,16 @@
     <string name="back4app_client_key">nh0IvcLKerhjs0ngBxKGhX96mtfXsH0FKtVJVgVr</string>
     <string name="facebook_app_id">568770524132064</string>
     <string name="fb_login_protocol_scheme">fb568770524132064</string>
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="objectId">objectId</string>
+    <string name="groupId">groupId</string>
+    <string name="user">user</string>
+    <string name="matches">matches</string>
+    <string name="groupName">groupName</string>
+    <string name="restaurants">restaurants</string>
+    <string name="mutualMatches">mutualMatches</string>
+    <string name="username">username</string>
+    <string name="firstName">firstName</string>
+    <string name="lastName">lastName</string>
+    <string name="createdAt">createdAt</string>
+
 </resources>

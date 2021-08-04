@@ -2,6 +2,7 @@ package com.example.wheretoeat.ParseService;
 
 import android.util.Log;
 
+import com.example.wheretoeat.R;
 import com.parse.FindCallback;
 import com.parse.GetCallback;
 import com.parse.ParseException;
@@ -22,10 +23,14 @@ public class GroupQuery {
         return instance;
     }
 
+    private static final String restaurants_key = String.valueOf(R.string.restaurants);
+    private static final String groupName_key = String.valueOf(R.string.groupName);
+
+
     public void newGroup(JSONArray restaurants, String groupName, GroupQuery.newGroupInterface listener) {
         ParseObject newGroup = new ParseObject("Group");
-        newGroup.put("restaurants", restaurants);
-        newGroup.put("groupName", groupName);
+        newGroup.put(restaurants_key, restaurants);
+        newGroup.put(groupName_key, groupName);
 
         newGroup.saveInBackground(new SaveCallback() {
             @Override

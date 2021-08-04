@@ -245,7 +245,7 @@ public class AddFragment extends Fragment implements
                     onLastGroup = true;
                 }
 
-                ParseObject group = objects.get(i);
+                ParseObject group = objects.get(i).getParseObject(getString(R.string.groupId));
                 // get the other users in the same group as user
                 matchQuery.getUsersInGroup(currentUser, group, true, true, this);
 
@@ -261,7 +261,7 @@ public class AddFragment extends Fragment implements
             // if this is a 2 person group
             if (objects.size() == 1) {
                 // check if the other user matches the user that was to be added
-                if (objects.get(0).getParseObject("user").getString("username").equals(usernames.get(0))){
+                if (objects.get(0).getParseObject(getString(R.string.user)).getString(getString(R.string.username)).equals(usernames.get(0))){
                     groupAlreadyExists = true;
                     Toast.makeText(getContext(), "You've already added this user", Toast.LENGTH_SHORT).show();
                 }
@@ -367,7 +367,7 @@ public class AddFragment extends Fragment implements
                 SharedPreferences sharedPreferences = getContext().getSharedPreferences("FB_userId", Context.MODE_PRIVATE);
                 String currentUserId = sharedPreferences.getString("facebook_user_id", null);
                 ParseQuery<ParseUser> query = ParseUser.getQuery();
-                query.whereEqualTo("objectId", currentUserId);
+                query.whereEqualTo(getString(R.string.objectId), currentUserId);
                 // start an asynchronous call for posts
                 query.findInBackground(new FindCallback<ParseUser>() {
                     @Override

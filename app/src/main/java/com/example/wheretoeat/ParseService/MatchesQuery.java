@@ -6,6 +6,7 @@ import android.widget.Toast;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 
+import com.example.wheretoeat.R;
 import com.example.wheretoeat.modals.Matches;
 import com.parse.CountCallback;
 import com.parse.FindCallback;
@@ -30,14 +31,24 @@ public class MatchesQuery {
         return instance;
     }
 
+    private static final String user_key = String.valueOf(R.string.user);
+    private static final String groupId_key = String.valueOf(R.string.groupId);
+    private static final String matches_key = String.valueOf(R.string.matches);
+    private static final String username_key = String.valueOf(R.string.username);
+    private static final String mutualMatches_key = String.valueOf(R.string.mutualMatches);
+
+
+
+
+
     public void getCurrUserGroups(ParseUser currUser, boolean includeGroup, boolean order, MatchesQuery.getCurrUserGroupsInterface listener) {
         ParseQuery<ParseObject> getGroups = ParseQuery.getQuery("Matches");
-        getGroups.whereEqualTo("user", currUser);
+        getGroups.whereEqualTo(user_key, currUser);
         if (includeGroup) {
-            getGroups.include("groupId");
+            getGroups.include(groupId_key);
         }
         if (order) {
-            getGroups.orderByDescending("createdAt");
+            getGroups.orderByDescending(String.valueOf(R.string.createdAt));
         }
         // get all groups current user is a part of
         getGroups.findInBackground(new FindCallback<ParseObject>() {
@@ -50,13 +61,13 @@ public class MatchesQuery {
 
     public void getUsersInGroup(ParseUser currUser, ParseObject group, boolean includeUser, boolean omitCurrUser, MatchesQuery.getUsersInGroupInterface listener) {
         ParseQuery<ParseObject> getGroupUsers = ParseQuery.getQuery("Matches");
-        getGroupUsers.whereEqualTo("groupId", group);
+        getGroupUsers.whereEqualTo(groupId_key, group);
 
         if (includeUser) {
-            getGroupUsers.include("user");
+            getGroupUsers.include(user_key);
         }
         if (omitCurrUser) {
-            getGroupUsers.whereNotEqualTo("user", currUser);
+            getGroupUsers.whereNotEqualTo(user_key, currUser);
         }
         getGroupUsers.findInBackground(new FindCallback<ParseObject>() {
             @Override
@@ -70,7 +81,7 @@ public class MatchesQuery {
 
     public void checkUsernamesValid(ArrayList<String> usernames, MatchesQuery.checkUsernamesInterface listener) {
         ParseQuery<ParseUser> query = ParseUser.getQuery();
-        query.whereContainedIn("username", usernames);
+        query.whereContainedIn(username_key, usernames);
 
         query.countInBackground(new CountCallback() {
             @Override
@@ -82,8 +93,8 @@ public class MatchesQuery {
 
     public void addMatchesRow(ParseUser user, ParseObject group) {
         Matches newMatch = new Matches();
-        newMatch.put("user", user);
-        newMatch.put("groupId", group);
+        newMatch.put(user_key, user);
+        newMatch.put(groupId_key, group);
 
         // Saves the new object.
         newMatch.saveInBackground();
@@ -91,8 +102,8 @@ public class MatchesQuery {
 
     public void getMatchRow(ParseUser user, ParseObject group, MatchesQuery.getMatchRowInterface listener) {
         ParseQuery<ParseObject> query = ParseQuery.getQuery("Matches");
-        query.whereEqualTo("user", user);
-        query.whereEqualTo("groupId", group);
+        query.whereEqualTo(user_key, user);
+        query.whereEqualTo(groupId_key, group);
 
         query.getFirstInBackground(new GetCallback<ParseObject>() {
             @Override
@@ -116,8 +127,8 @@ public class MatchesQuery {
     public void checkMatchingDone(ParseObject group, MatchesQuery.checkMatchingDoneInterface listener) {
 
         ParseQuery<ParseObject> checkifMatched = ParseQuery.getQuery("Matches");
-        checkifMatched.whereEqualTo("groupId", group);
-        checkifMatched.whereEqualTo("matches", null);
+        checkifMatched.whereEqualTo(groupId_key, group);
+        checkifMatched.whereEqualTo(matches_key, null);
 
 
         checkifMatched.findInBackground(new FindCallback<ParseObject>() {
@@ -129,7 +140,7 @@ public class MatchesQuery {
 
     }
     public void saveMutualMatches(ParseObject group, JSONArray mutualMatches) {
-        group.put("mutualMatches", mutualMatches);
+        group.put(mutualMatches_key, mutualMatches);
         group.saveInBackground();
     }
 

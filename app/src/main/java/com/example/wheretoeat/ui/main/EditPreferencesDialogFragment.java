@@ -94,8 +94,6 @@ public class EditPreferencesDialogFragment extends DialogFragment implements Loc
 
     public EditPreferencesDialogFragment() {
         // Empty constructor is required for DialogFragment
-        // Make sure not to add arguments to the constructor
-        // Use `newInstance` instead as shown below
     }
 
     public static EditPreferencesDialogFragment newInstance(boolean addNewGroup) {
@@ -163,10 +161,10 @@ public class EditPreferencesDialogFragment extends DialogFragment implements Loc
                 if (groupName.length() < 1 && isGroup) {
                     Toast.makeText(getContext(), "Group name is empty", Toast.LENGTH_SHORT).show();
                 }
-                if (zipCode.length() != 5 && !swUserLocation.isChecked()) {
+                else if (zipCode.length() != 5 && !swUserLocation.isChecked()) {
                     Toast.makeText(getContext(), "Please enter valid zip code", Toast.LENGTH_SHORT).show();
                 }
-                if (swUserLocation.isChecked()) {
+                else if (swUserLocation.isChecked()) {
                     // begin process to get user's zip code
                     checkLocationPermissions();
                 } else {
@@ -211,7 +209,6 @@ public class EditPreferencesDialogFragment extends DialogFragment implements Loc
         // Notice the use of `getTargetFragment` which will be set when the dialog is displayed
         EditPreferencesDialogListener listener = (EditPreferencesDialogListener) getTargetFragment();
         String pricePref = checkPricePref();
-        Log.e(TAG, "GROUP NAME FROM DIALOG" + groupName);
         listener.onFinishEditDialog(zipCode, pricePref, groupName);
         dismiss();
     }
@@ -235,17 +232,14 @@ public class EditPreferencesDialogFragment extends DialogFragment implements Loc
     }
 
     private void checkLocationPermissions() {
-        Log.e(TAG, "in checklocationpermissions");
         if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             requestPermissionLauncher.launch(
                     Manifest.permission.ACCESS_COARSE_LOCATION);
         }
         else {
-            Log.e(TAG, "in checklocationpermissions-- else");
             try {
                 getLongLat();
             } catch (IOException e) {
-                Log.e(TAG, "check location permissions error", e);
                 e.printStackTrace();
 
             }
@@ -253,18 +247,10 @@ public class EditPreferencesDialogFragment extends DialogFragment implements Loc
     }
 
     private void getLongLat() throws IOException {
-        Log.e(TAG, "in getzipcode");
         lm = (LocationManager) getActivity().getSystemService(Context.LOCATION_SERVICE);
         criteria = new Criteria();
         bestProvider = String.valueOf(lm.getBestProvider(criteria, true));
         if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
             return;
         }
         Location location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
@@ -290,9 +276,6 @@ public class EditPreferencesDialogFragment extends DialogFragment implements Loc
         //open the map:
         latitude = location.getLatitude();
         longitude = location.getLongitude();
-
-        Log.e(TAG, "location: " + latitude.toString() + longitude.toString());
-        Toast.makeText(getContext(), "latitude:" + latitude + " longitude:" + longitude, Toast.LENGTH_SHORT).show();
         try {
             getZipCode();
         } catch (IOException e) {
@@ -307,7 +290,6 @@ public class EditPreferencesDialogFragment extends DialogFragment implements Loc
         addresses = geocoder.getFromLocation(latitude, longitude, 1); // Here 1 represent max location result to returned, by documents it recommended 1 to 5
 
         String postalCode = addresses.get(0).getPostalCode();
-        Log.e(TAG, "postalCode: " + postalCode);
         zipCode = postalCode;
         sendBackResult();
     }
@@ -323,8 +305,6 @@ public class EditPreferencesDialogFragment extends DialogFragment implements Loc
                 if (isGranted) {
                     // Permission is granted. Continue the action or workflow in your
                     // app.
-
-                    Log.e(TAG, "in activtyresultlauncher");
                     try {
                         getLongLat();
                     } catch (IOException e) {
@@ -337,6 +317,8 @@ public class EditPreferencesDialogFragment extends DialogFragment implements Loc
                     // settings in an effort to convince the user to change their
                     // decision.
                     Toast.makeText(getContext(), "Need location", Toast.LENGTH_SHORT).show();
+                    etCustomLocation.setEnabled(false);
+                    swUserLocation.setChecked(false);
                 }
             });
 
