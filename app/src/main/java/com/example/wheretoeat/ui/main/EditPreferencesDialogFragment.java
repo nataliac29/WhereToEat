@@ -59,6 +59,11 @@ import okhttp3.Response;
 
 public class EditPreferencesDialogFragment extends DialogFragment implements LocationListener{
 
+    // Toast messages
+    public static final String GROUP_NAME_IS_EMPTY = "Group name is empty";
+    public static final String VALID_ZIP_CODE = "Please enter valid zip code";
+    public static final String NEED_LOCATION = "Need location";
+
     private EditText etCustomLocation;
     private Switch swUserLocation;
     private RadioGroup rgPrice;
@@ -106,11 +111,6 @@ public class EditPreferencesDialogFragment extends DialogFragment implements Loc
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        // Fetch arguments from bundle and set title
-        String title = "Restaurant Preferences";
-        getDialog().setTitle(title);
-        // Show soft keyboard automatically and request focus to field
-
 
         etCustomLocation = view.findViewById(R.id.etCustomLocation);
         swUserLocation = view.findViewById(R.id.swUserLocation);
@@ -141,6 +141,8 @@ public class EditPreferencesDialogFragment extends DialogFragment implements Loc
         });
         // default focus
         etCustomLocation.requestFocus();
+
+        // show soft keyboard
         getDialog().getWindow().setSoftInputMode(
                 WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
 
@@ -150,10 +152,10 @@ public class EditPreferencesDialogFragment extends DialogFragment implements Loc
                 groupName = etGroupName.getText().toString();
                 zipCode = etCustomLocation.getText().toString();
                 if (groupName.length() < 1 && isGroup) {
-                    Toast.makeText(getContext(), "Group name is empty", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), GROUP_NAME_IS_EMPTY, Toast.LENGTH_SHORT).show();
                 }
                 else if (zipCode.length() != 5 && !swUserLocation.isChecked()) {
-                    Toast.makeText(getContext(), "Please enter valid zip code", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), VALID_ZIP_CODE, Toast.LENGTH_SHORT).show();
                 }
                 else if (swUserLocation.isChecked()) {
                     // begin process to get user's zip code
@@ -305,7 +307,7 @@ public class EditPreferencesDialogFragment extends DialogFragment implements Loc
                     // same time, respect the user's decision. Don't link to system
                     // settings in an effort to convince the user to change their
                     // decision.
-                    Toast.makeText(getContext(), "Need location", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), NEED_LOCATION, Toast.LENGTH_SHORT).show();
                     etCustomLocation.setEnabled(false);
                     swUserLocation.setChecked(false);
                 }

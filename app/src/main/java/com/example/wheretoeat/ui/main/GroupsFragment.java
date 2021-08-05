@@ -6,22 +6,18 @@ import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
 import com.example.wheretoeat.Constants;
-import com.example.wheretoeat.ParseService.GroupQuery;
 import com.example.wheretoeat.ParseService.MatchesQuery;
-import com.example.wheretoeat.ParseService.UserQuery;
 import com.example.wheretoeat.adapters.FriendsAdapter;
 import com.example.wheretoeat.R;
 import com.facebook.AccessToken;
@@ -31,8 +27,6 @@ import com.parse.ParseObject;
 import com.parse.ParseQuery;
 import com.parse.ParseUser;
 
-import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
@@ -48,14 +42,11 @@ public class GroupsFragment extends Fragment implements
         // Required empty public constructor
     }
 
-    // Parse data json keys
-    private final String KEY_USER = Constants.KEY_USER;
-    private final String KEY_GROUPNAME = Constants.KEY_GROUPNAME;
-    private final String KEY_MUTUALMATCHES = Constants.KEY_MUTUALMATCHES;
-    private final String KEY_MATCHES = Constants.KEY_MATCHES;
-    private final String KEY_OBJECTID = Constants.KEY_OBJECTID;
-    private final String KEY_FIRST_NAME = Constants.KEY_FIRST_NAME;
-    private final String KEY_LAST_NAME = Constants.KEY_LAST_NAME;
+    // Toast constants
+    private final String NO_GROUPS_MESSAGE = "Click the plus tab to add friends!";
+    private final String GROUPS_ERROR_MESSAGE = "Error getting your groups";
+
+
 
     RecyclerView rvFriends;
 
@@ -82,8 +73,6 @@ public class GroupsFragment extends Fragment implements
     // store instances of Parse helper classes
     MatchesQuery matchQuery;
 
-
-    public static final String TAG = "GroupFragment";
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -143,7 +132,7 @@ public class GroupsFragment extends Fragment implements
         if (e == null) {
             // if no groups, don't have to add anything to adapter
             if (objects.size() == 0) {
-                Toast.makeText(getContext(), "Click the plus tab to add friends!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), NO_GROUPS_MESSAGE, Toast.LENGTH_SHORT).show();
                 adapter.clear();
                 adapter.notifyDataSetChanged();
                 swipeContainer.setRefreshing(false);
@@ -173,7 +162,7 @@ public class GroupsFragment extends Fragment implements
             }
         }
         else {
-            Toast.makeText(getContext(), "Error getting your groups.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), GROUPS_ERROR_MESSAGE, Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -193,7 +182,7 @@ public class GroupsFragment extends Fragment implements
                 swipeContainer.setRefreshing(false);
             }
         } else {
-            Toast.makeText(getContext(), "Error fetching your groups", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), GROUPS_ERROR_MESSAGE, Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -207,7 +196,7 @@ public class GroupsFragment extends Fragment implements
                 SharedPreferences sharedPreferences = getContext().getSharedPreferences("FB_userId", Context.MODE_PRIVATE);
                 String currentUserId = sharedPreferences.getString("facebook_user_id", null);
                 ParseQuery<ParseUser> query = ParseUser.getQuery();
-                query.whereEqualTo("objectId", currentUserId);
+                query.whereEqualTo(Constants.KEY_OBJECTID, currentUserId);
                 // start an asynchronous call for posts
                 query.findInBackground(new FindCallback<ParseUser>() {
                     @Override
@@ -215,7 +204,7 @@ public class GroupsFragment extends Fragment implements
                         if (e == null) {
                             currentUser = objects.get(0);
                         } else {
-                            Log.e(TAG, "Error getting Parse user" + e.getMessage());
+                            Toast.makeText(getContext(), "Error getting user", Toast.LENGTH_SHORT).show();
                         }
 
                     }

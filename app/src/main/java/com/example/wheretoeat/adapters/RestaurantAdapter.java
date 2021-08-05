@@ -1,9 +1,6 @@
 package com.example.wheretoeat.adapters;
 
 import android.content.Context;
-import android.content.Intent;
-import android.content.res.Configuration;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,31 +9,16 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.RatingBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.view.menu.MenuView;
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.example.wheretoeat.Constants;
-import com.example.wheretoeat.DataTransferInterface;
 import com.example.wheretoeat.R;
-import com.example.wheretoeat.modals.Restaurant;
-import com.parse.FindCallback;
-import com.parse.ParseException;
-import com.parse.ParseObject;
-import com.parse.ParseQuery;
-import com.parse.SaveCallback;
 
-import org.jetbrains.annotations.NotNull;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.parceler.Parcels;
-import org.w3c.dom.Text;
-
-import java.util.List;
 
 import jp.wasabeef.glide.transformations.RoundedCornersTransformation;
 

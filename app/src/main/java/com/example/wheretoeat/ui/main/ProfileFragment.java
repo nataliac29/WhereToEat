@@ -13,7 +13,9 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.example.wheretoeat.Constants;
 import com.example.wheretoeat.R;
 import com.facebook.AccessToken;
 import com.parse.FindCallback;
@@ -34,10 +36,16 @@ public class ProfileFragment extends Fragment {
 
     ParseUser currentUser;
 
-    public static final String TAG = "ProfileFragment";
     public ProfileFragment() {
         // Required empty public constructor
     }
+
+    // Toast Message
+    public static final String ERROR_GETTING_USER = "Error getting user";
+
+    // Parse keyss
+    private static final String KEY_FIRST_NAME = Constants.KEY_FIRST_NAME;
+    public static final String KEY_LAST_NAME = Constants.KEY_LAST_NAME;
 
 
     @Override
@@ -74,8 +82,8 @@ public class ProfileFragment extends Fragment {
         if (ParseUser.getCurrentUser() != null) {
             currentUser = ParseUser.getCurrentUser();
             username = currentUser.getUsername();
-            firstName = currentUser.getString("firstName");
-            lastName = currentUser.getString("lastName");
+            firstName = currentUser.getString(KEY_FIRST_NAME);
+            lastName = currentUser.getString(KEY_LAST_NAME);
 
         } else {
             AccessToken accessToken = AccessToken.getCurrentAccessToken();
@@ -92,11 +100,11 @@ public class ProfileFragment extends Fragment {
                         if (e == null) {
                             currentUser = objects.get(0);
                             username = currentUser.getUsername();
-                            firstName = currentUser.getString("firstName");
-                            firstName = currentUser.getString("lastName");
+                            firstName = currentUser.getString(KEY_FIRST_NAME);
+                            firstName = currentUser.getString(KEY_LAST_NAME);
 
                         } else {
-                            Log.e(TAG, "Error getting Parse user" + e.getMessage());
+                            Toast.makeText(getContext(), ERROR_GETTING_USER, Toast.LENGTH_SHORT).show();
                         }
 
                     }

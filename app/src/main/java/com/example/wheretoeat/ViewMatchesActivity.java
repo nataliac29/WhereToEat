@@ -42,10 +42,6 @@ public class ViewMatchesActivity extends AppCompatActivity implements GroupQuery
         //Set a layout Manager on the recycler view
         rvMovies.setLayoutManager((new LinearLayoutManager(this)));
 
-        ParseQuery<ParseObject> query = ParseQuery.getQuery("Group");
-        Log.e("ViewMatchActivity", "in update restaurants");
-        // Retrieve the object by id
-
         // initialize Parse helper class
         groupQuery = GroupQuery.getInstance();
 
@@ -56,9 +52,9 @@ public class ViewMatchesActivity extends AppCompatActivity implements GroupQuery
     @Override
     public void onFinishGetGroupId(ParseObject object, ParseException e) {
         if (e == null) {
-            for (int i=0; i <  object.getJSONArray("mutualMatches").length(); i++) {
+            for (int i=0; i <  object.getJSONArray(Constants.KEY_MUTUALMATCHES).length(); i++) {
                 try {
-                    restaurants.put(object.getJSONArray("mutualMatches").get(i));
+                    restaurants.put(object.getJSONArray(Constants.KEY_MUTUALMATCHES).get(i));
                 } catch (JSONException jsonException) {
                     jsonException.printStackTrace();
                 }

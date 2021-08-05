@@ -43,7 +43,19 @@ public class MatchActivity extends AppCompatActivity implements
         MatchesQuery.getUsersInGroupInterface
 {
 
-    private static final String TAG = "MatchActivity";
+
+    // Toast messages
+    private static final String GROUP_ERROR = "Error getting groups's users";
+    private static final String MATCH_ERROR = "Must like at least one restaurant";
+    private static final String SAVE_ERROR = "Error saving restaurants";
+    private static final String GENERIC_ERROR = "Something went wrong!";
+
+    private static final String SUCCESS = "Success!";
+    private static final String DONE = "Done!";
+    private static final String LIKE = "Liked!";
+    private static final String DISLIKE = "Disliked!";
+
+
 
 
     public ParseUser currentUser;
@@ -97,9 +109,9 @@ public class MatchActivity extends AppCompatActivity implements
             currGroupObject = object;
 
             // for every restaurant, add to restaurants array
-            for (int i = 0; i < object.getJSONArray("restaurants").length(); i++) {
+            for (int i = 0; i < object.getJSONArray(Constants.KEY_RESTAURANTS).length(); i++) {
                 try {
-                    restaurants.put(object.getJSONArray("restaurants").get(i));
+                    restaurants.put(object.getJSONArray(Constants.KEY_RESTAURANTS).get(i));
                 } catch (JSONException jsonException) {
                     jsonException.printStackTrace();
                 }
@@ -126,7 +138,7 @@ public class MatchActivity extends AppCompatActivity implements
             @Override
             public void cardSwipedLeft(int position) {
                 // on card swipe left display a toast message.
-                Toast toast = Toast.makeText(MatchActivity.this, "Disliked!", Toast.LENGTH_SHORT);
+                Toast toast = Toast.makeText(MatchActivity.this, DISLIKE, Toast.LENGTH_SHORT);
                 toast.show();
 
                 // shorten time Toast is visible so doesn't overlap more recent Toast
@@ -142,7 +154,7 @@ public class MatchActivity extends AppCompatActivity implements
             @Override
             public void cardSwipedRight(int position) {
                 // on card swiped to right we are displaying a toast message.
-                Toast toast = Toast.makeText(MatchActivity.this, "Liked!", Toast.LENGTH_SHORT);
+                Toast toast = Toast.makeText(MatchActivity.this, LIKE, Toast.LENGTH_SHORT);
                 toast.show();
                 Handler handler = new Handler();
                 handler.postDelayed(new Runnable() {
@@ -162,12 +174,12 @@ public class MatchActivity extends AppCompatActivity implements
             public void cardsDepleted() {
                 // this method is called when no card is present
                 if (likedRestaurants.length() >= 1) {
-                    Toast.makeText(MatchActivity.this, "Done!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MatchActivity.this, DONE, Toast.LENGTH_SHORT).show();
                 // get row in match table corresponding to current user and group
                     matchesQuery.getMatchRow(currentUser, currGroupObject, MatchActivity.this);
                 }
                 else {
-                    Toast.makeText(MatchActivity.this, "Must like at least one restaurant", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MatchActivity.this, MATCH_ERROR, Toast.LENGTH_SHORT).show();
                     setAdapter();
                 }
             }
@@ -194,7 +206,7 @@ public class MatchActivity extends AppCompatActivity implements
                 jsonException.printStackTrace();
             }
         } else {
-            Toast.makeText(MatchActivity.this, "Error", Toast.LENGTH_SHORT).show();
+            Toast.makeText(MatchActivity.this, GENERIC_ERROR, Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -206,11 +218,11 @@ public class MatchActivity extends AppCompatActivity implements
     @Override
     public void onFinishUpdateMatches(ParseException e) {
         if (e == null) {
-            Toast.makeText(MatchActivity.this, "Error saving restaurants", Toast.LENGTH_SHORT).show();
+            Toast.makeText(MatchActivity.this, SUCCESS, Toast.LENGTH_SHORT).show();
             // check if the last user to match, if so find mutual matches
             checkMatchingDone();
         } else {
-            Toast.makeText(MatchActivity.this, "Error saving restaurants", Toast.LENGTH_SHORT).show();
+            Toast.makeText(MatchActivity.this, SAVE_ERROR, Toast.LENGTH_SHORT).show();
         }
         // Go back to groups fragment
         Intent i = new Intent(this, MainActivity.class);
@@ -236,7 +248,7 @@ public class MatchActivity extends AppCompatActivity implements
                 }
             }
         } else {
-            Toast.makeText(MatchActivity.this, "Error getting groups's users", Toast.LENGTH_SHORT).show();
+            Toast.makeText(MatchActivity.this, GROUP_ERROR, Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -249,11 +261,11 @@ public class MatchActivity extends AppCompatActivity implements
     public void onFinishGetUsersInGroup(List<ParseObject> objects, ParseException e) {
         if (e == null) {
             // start mutual matches with first list of liked restaurants
-            mutualMatches = objects.get(0).getJSONArray("matches");
+            mutualMatches = objects.get(0).getJSONArray(Constants.KEY_MATCHES);
             for (int i = 1; i < objects.size(); i++) {
                 try {
                     // for each subsequent list find common elements with mutual Matches and update mutualMatch to be that merge
-                    mutualMatches = findCommonRestaurants(mutualMatches, objects.get(i).getJSONArray("matches"));
+                    mutualMatches = findCommonRestaurants(mutualMatches, objects.get(i).getJSONArray(Constants.KEY_MATCHES));
                 } catch (JSONException jsonException) {
                     jsonException.printStackTrace();
                 }
@@ -261,7 +273,7 @@ public class MatchActivity extends AppCompatActivity implements
             // save list of mutual matches to group's info
             matchesQuery.saveMutualMatches(currGroupObject, mutualMatches);
         } else {
-            Toast.makeText(MatchActivity.this, "Error getting group's users", Toast.LENGTH_SHORT).show();
+            Toast.makeText(MatchActivity.this, GROUP_ERROR, Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -301,9 +313,8 @@ public class MatchActivity extends AppCompatActivity implements
             if (isLoggedIn) {
                 SharedPreferences sharedPreferences = this.getSharedPreferences("FB_userId", Context.MODE_PRIVATE);
                 String currentUserId = sharedPreferences.getString("facebook_user_id", null);
-                Log.e(TAG, "SHARED PREF ID" + currentUserId);
                 ParseQuery<ParseUser> query = ParseUser.getQuery();
-                query.whereEqualTo("objectId", currentUserId);
+                query.whereEqualTo(Constants.KEY_OBJECTID, currentUserId);
                 // start an asynchronous call for posts
                 query.findInBackground(new FindCallback<ParseUser>() {
                     @Override
@@ -311,7 +322,7 @@ public class MatchActivity extends AppCompatActivity implements
                         if (e == null) {
                             currentUser = objects.get(0);
                         } else {
-                            Log.e(TAG, "Error getting Parse user" + e.getMessage());
+                            Toast.makeText(MatchActivity.this, "Error getting user", Toast.LENGTH_SHORT).show();
                         }
 
                     }

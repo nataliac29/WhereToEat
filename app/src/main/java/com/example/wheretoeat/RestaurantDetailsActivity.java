@@ -30,10 +30,19 @@ import okhttp3.Response;
 public class RestaurantDetailsActivity extends AppCompatActivity {
 
     public final static String TAG = "RestaurantDetailsAct";
+    public final static String KEY_PHONE = "display_phone";
+    public final static String KEY_LOCATION = "location";
+    public final static String KEY_ADDRESS = "display_address";
+    public final static String KEY_PRICE = "price";
+    public final static String KEY_PHOTOS = "photos";
+    public final static String KEY_CAT_TITLE = "title";
+    public final static String KEY_URL = "url";
+    public final static String KEY_REVIEW = "reviews";
+    public final static String KEY_REVIEW_TXT = "text";
+    public final static String KEY_TIME = "time_created";
 
     String restaurantId;
 
-    ImageView ivPhoto;
     TextView tvNameDetails;
     TextView tvLink;
     RatingBar tvRatingDetails;
@@ -73,8 +82,8 @@ public class RestaurantDetailsActivity extends AppCompatActivity {
 
     private void getRestaurantDetails() {
         final YelpService yelpService = new YelpService();
+        // gets more detailed information about restaurant
         yelpService.getRestaurantDetails(restaurantId, new Callback() {
-
             @Override
             public void onFailure(Call call, IOException e) {
                 e.printStackTrace();
@@ -82,15 +91,13 @@ public class RestaurantDetailsActivity extends AppCompatActivity {
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
+                // get restaurant data back
                 String jsonData = response.body().string();
                 try {
                     JSONObject yelpJSON = new JSONObject(jsonData);
-//                    Log.e(TAG, yelpJSON.toString());
                     runOnUiThread(new Runnable() {
-
                         @Override
                         public void run() {
-
                             try {
                                 setViews(yelpJSON);
                             } catch (JSONException e) {
@@ -108,24 +115,22 @@ public class RestaurantDetailsActivity extends AppCompatActivity {
     }
     private void setViews(JSONObject yelpJSON) throws JSONException {
 
-        tvNameDetails.setText(yelpJSON.getString("name"));
+        tvNameDetails.setText(yelpJSON.getString(Constants.KEY_NAME));
 
-        tvLink.setText(yelpJSON.getString("url"));
+        tvLink.setText(yelpJSON.getString(KEY_URL));
 
-        double rating = yelpJSON.getDouble("rating") / 2.0f;
+        double rating = yelpJSON.getDouble(Constants.KEY_RATING) / 2.0f;
         tvRatingDetails.setRating((float) rating);
 
-        tvCategoriesDetails.setText(getCategories(yelpJSON.getJSONArray("categories")));
+        tvCategoriesDetails.setText(getCategories(yelpJSON.getJSONArray(Constants.KEY_CATEGORIES)));
 
-        tvPhone.setText(yelpJSON.getString("display_phone"));
+        tvPhone.setText(yelpJSON.getString(KEY_PHONE));
 
-        tvAddress.setText(getAddress(yelpJSON.getJSONObject("location").getJSONArray("display_address")));
+        tvAddress.setText(getAddress(yelpJSON.getJSONObject(KEY_LOCATION).getJSONArray(KEY_ADDRESS)));
 
-        tvPrice.setText(yelpJSON.getString("price"));
+        tvPrice.setText(yelpJSON.getString(KEY_PRICE));
 
-        JSONArray photoURLS =  yelpJSON.getJSONArray("photos");
-
-        Log.e(TAG, "IMAGE OBJECT:" + photoURLS.toString());
+        JSONArray photoURLS =  yelpJSON.getJSONArray(KEY_PHOTOS);
 
         for (int i = 0; i < photoURLS.length(); i++) {
             ImageView photo = new ImageView(this);
@@ -148,7 +153,7 @@ public class RestaurantDetailsActivity extends AppCompatActivity {
         String categories = "";
         for (int i = 0; i < categoriesList.length(); i++) {
             try {
-                categories = categories + " " + categoriesList.getJSONObject(i).getString("title");
+                categories = categories + " " + categoriesList.getJSONObject(i).getString(KEY_CAT_TITLE);
             } catch (JSONException e) {
                 e.printStackTrace();
             }
@@ -187,18 +192,18 @@ public class RestaurantDetailsActivity extends AppCompatActivity {
                         @Override
                         public void run() {
                             try {
-                                JSONArray reviews = yelpJSON.getJSONArray("reviews");
+                                JSONArray reviews = yelpJSON.getJSONArray(KEY_REVIEW);
                                 for (int i = 0; i < reviews.length(); i++) {
                                     JSONObject reviewObject = reviews.getJSONObject(i);
                                     // getting name of reviewer
-                                    JSONObject reviewer = reviewObject.getJSONObject("user");
-                                    String name = reviewer.getString("name");
+                                    JSONObject reviewer = reviewObject.getJSONObject(Constants.KEY_USER);
+                                    String name = reviewer.getString(Constants.KEY_NAME);
 
-                                    double rating = reviewObject.getDouble("rating");
+                                    double rating = reviewObject.getDouble(Constants.KEY_RATING);
 
-                                    String reviewBody = reviewObject.getString("text");
+                                    String reviewBody = reviewObject.getString(KEY_REVIEW_TXT);
 
-                                    String timestamp = reviewObject.getString("time_created");
+                                    String timestamp = reviewObject.getString(KEY_TIME);
 
                                     addReviews(rating, name, reviewBody, timestamp);
 

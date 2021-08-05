@@ -1,27 +1,14 @@
 package com.example.wheretoeat.ui.main;
 
-import android.Manifest;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
-import android.location.Address;
-import android.location.Criteria;
-import android.location.Geocoder;
-import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
 import android.os.Bundle;
 
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentTransaction;
 
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -35,29 +22,22 @@ import com.example.wheretoeat.ParseService.GroupQuery;
 import com.example.wheretoeat.ParseService.MatchesQuery;
 import com.example.wheretoeat.ParseService.UserQuery;
 import com.example.wheretoeat.R;
-import com.example.wheretoeat.modals.Matches;
 import com.example.wheretoeat.modals.Restaurant;
 import com.example.wheretoeat.YelpService;
 import com.facebook.AccessToken;
 import com.google.android.material.tabs.TabLayout;
-import com.parse.CountCallback;
 import com.parse.FindCallback;
-import com.parse.GetCallback;
 import com.parse.ParseException;
 import com.parse.ParseObject;
 import com.parse.ParseQuery;
-import com.parse.ParseRelation;
 import com.parse.ParseUser;
-import com.parse.SaveCallback;
 
 import org.json.JSONArray;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -73,8 +53,17 @@ public class AddFragment extends Fragment implements
         GroupQuery.newGroupInterface
 {
 
-    public static final String TAG = "AddFragment";
+
     public static final int INT_NON_GROUP = 1;
+
+    // Toast Constants
+    public static final String REMOVE_YOURSELF = "You cannot add yourself, please remove ";
+    public static final String DOES_NOT_EXIST = "user does not exist";
+    public static final String ERROR_GROUPS = "Error getting your groups.";
+    public static final String USER_ALREADY_ADDED = "You've already added this user";
+    public static final String ERROR_NEW_GROUP = "Error creating new group";
+    public static final String SUCCESS = "Success!";
+    public static final String ERROR_GETTING_USER = "Error getting user";
 
     ParseUser currentUser;
 
@@ -196,7 +185,7 @@ public class AddFragment extends Fragment implements
 
         // if one of the added usernames is the current user, notify user
         if (recipientUsername.contains(currentUser.getUsername())) {
-            Toast.makeText(getContext(), "You cannot add yourself, please remove " + currentUser.getUsername(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), REMOVE_YOURSELF + currentUser.getUsername(), Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -209,7 +198,7 @@ public class AddFragment extends Fragment implements
         if (e == null) {
             // if not all usernames are valid, notify user
             if (count != usernames.size()) {
-                Toast.makeText(getContext(), "user does not exist", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), DOES_NOT_EXIST, Toast.LENGTH_SHORT).show();
             } else {
                 // if only adding one user, will check if that user has already been added
                 checkGroupExists();
@@ -253,7 +242,7 @@ public class AddFragment extends Fragment implements
 
             }
         } else {
-            Toast.makeText(getContext(), "Error getting your groups.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), ERROR_GROUPS, Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -265,14 +254,15 @@ public class AddFragment extends Fragment implements
                 // check if the other user matches the user that was to be added
                 if (objects.get(0).getParseObject(Constants.KEY_USER).getString(Constants.KEY_USERNAME).equals(usernames.get(0))){
                     groupAlreadyExists = true;
-                    Toast.makeText(getContext(), "You've already added this user", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), USER_ALREADY_ADDED, Toast.LENGTH_SHORT).show();
                 }
             }
+
             if (onLastGroup) {
                 checkShowDialog();
             }
         } else {
-            Toast.makeText(getContext(), "Error fetching your groups", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), ERROR_GROUPS, Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -325,7 +315,7 @@ public class AddFragment extends Fragment implements
             getUsersFromUsername();
 
         } else {
-            Toast.makeText(getContext(), "Error creating new group", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), ERROR_NEW_GROUP, Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -351,7 +341,7 @@ public class AddFragment extends Fragment implements
             matchQuery.addMatchesRow(newGroupUsers.get(i), currGroup);
             // when on last user, switch tabs to home (groups) tab and notify user
             if (i == (usernames.size() - 1)) {
-                Toast.makeText(getContext(), "Success!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), SUCCESS, Toast.LENGTH_SHORT).show();
                 TabLayout tabs = (TabLayout)((MainActivity)getActivity()).findViewById(R.id.tabs);
                 tabs.getTabAt(0).select();
             }
@@ -377,7 +367,7 @@ public class AddFragment extends Fragment implements
                         if (e == null) {
                             currentUser = objects.get(0);
                         } else {
-                            Toast.makeText(getContext(), "Error getting user", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(getContext(), ERROR_GETTING_USER, Toast.LENGTH_SHORT).show();
                         }
 
                     }
