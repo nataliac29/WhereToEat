@@ -10,9 +10,9 @@ import org.json.JSONArray;
 import java.util.ArrayList;
 
 public class CustomUser {
-    public static final String KEY_FIRST_NAME = "firstName";
-    public static final String KEY_LAST_NAME= "lastName";
-    public static final String KEY_ID = "objectId";
+    private static final String KEY_FIRST_NAME = "firstName";
+    private static final String KEY_LAST_NAME= "lastName";
+    private static final String KEY_ID = "objectId";
 
 
     public ParseUser user;

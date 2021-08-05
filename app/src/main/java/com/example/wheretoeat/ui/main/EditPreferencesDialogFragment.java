@@ -62,10 +62,6 @@ public class EditPreferencesDialogFragment extends DialogFragment implements Loc
     private EditText etCustomLocation;
     private Switch swUserLocation;
     private RadioGroup rgPrice;
-    private RadioButton rv1;
-    private RadioButton rv2;
-    private RadioButton rv3;
-    private RadioButton rv4;
     private Button btnClearPrice;
     private Button btnPrefDone;
     private EditText etGroupName;
@@ -74,7 +70,7 @@ public class EditPreferencesDialogFragment extends DialogFragment implements Loc
 
 
 
-    //for location functionality
+    // for location functionality
     LocationManager lm;
     Double latitude;
     Double longitude;
@@ -86,11 +82,6 @@ public class EditPreferencesDialogFragment extends DialogFragment implements Loc
 
 
     private static boolean isGroup;
-
-
-
-
-    private static final String TAG = "DialogFragment";
 
     public EditPreferencesDialogFragment() {
         // Empty constructor is required for DialogFragment
@@ -257,8 +248,6 @@ public class EditPreferencesDialogFragment extends DialogFragment implements Loc
         if (location != null) {
             longitude = location.getLongitude();
             latitude = location.getLatitude();
-            Log.e(TAG, "location: " + latitude.toString() + longitude.toString());
-
             getZipCode();
         }
         else {

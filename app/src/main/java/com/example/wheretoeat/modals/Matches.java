@@ -11,9 +11,9 @@ import java.util.ArrayList;
 
 @ParseClassName("Matches")
 public class Matches extends ParseObject {
-    public static final String KEY_MATCHES = "matches";
-    public static final String KEY_USER= "user";
-    public static final String KEY_GROUP = "group_id";
+    private static final String KEY_MATCHES = "matches";
+    private static final String KEY_USER= "user";
+    private static final String KEY_GROUP = "group_id";
 
 
     public String getGroupId () {

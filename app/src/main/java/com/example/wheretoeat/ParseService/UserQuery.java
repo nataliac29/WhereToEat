@@ -1,5 +1,6 @@
 package com.example.wheretoeat.ParseService;
 
+import com.example.wheretoeat.Constants;
 import com.example.wheretoeat.R;
 import com.example.wheretoeat.modals.Matches;
 import com.parse.CountCallback;
@@ -22,12 +23,12 @@ public class UserQuery {
         return instance;
     }
 
-    private static final String username_key = String.valueOf(R.string.username);
+    private static final String KEY_USERNAME = Constants.KEY_USERNAME;
 
 
     public void getUserFromUsername(ArrayList<String> usernames, UserQuery.getUserFromUsernameInterface listener) {
         ParseQuery<ParseUser> query = ParseUser.getQuery();
-        query.whereContainedIn(username_key, usernames);
+        query.whereContainedIn(KEY_USERNAME, usernames);
 
         query.findInBackground(new FindCallback<ParseUser>() {
             @Override

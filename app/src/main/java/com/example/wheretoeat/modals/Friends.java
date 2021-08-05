@@ -11,9 +11,9 @@ import java.util.Date;
 
 @ParseClassName("Friends")
 public class Friends extends ParseObject {
-    public static final String KEY_INIT_USER = "initial_user";
-    public static final String KEY_RECIPIENT_USER = "recipient_user";
-    public static final String KEY_RESTAURANTS = "restaurants";
+    private static final String KEY_INIT_USER = "initial_user";
+    private static final String KEY_RECIPIENT_USER = "recipient_user";
+    private static final String KEY_RESTAURANTS = "restaurants";
 
 
     public ParseUser getInitUser () {

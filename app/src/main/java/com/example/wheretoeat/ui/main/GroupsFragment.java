@@ -6,6 +6,7 @@ import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -17,6 +18,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import com.example.wheretoeat.Constants;
 import com.example.wheretoeat.ParseService.GroupQuery;
 import com.example.wheretoeat.ParseService.MatchesQuery;
 import com.example.wheretoeat.ParseService.UserQuery;
@@ -29,10 +31,16 @@ import com.parse.ParseObject;
 import com.parse.ParseQuery;
 import com.parse.ParseUser;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.ArrayList;
 import java.util.List;
 
-public class GroupsFragment extends Fragment implements MatchesQuery.getCurrUserGroupsInterface
+public class GroupsFragment extends Fragment implements
+        MatchesQuery.getCurrUserGroupsInterface,
+        MatchesQuery.getBasicGroupInfoInterface
 {
 
 
@@ -40,16 +48,31 @@ public class GroupsFragment extends Fragment implements MatchesQuery.getCurrUser
         // Required empty public constructor
     }
 
+    // Parse data json keys
+    private final String KEY_USER = Constants.KEY_USER;
+    private final String KEY_GROUPNAME = Constants.KEY_GROUPNAME;
+    private final String KEY_MUTUALMATCHES = Constants.KEY_MUTUALMATCHES;
+    private final String KEY_MATCHES = Constants.KEY_MATCHES;
+    private final String KEY_OBJECTID = Constants.KEY_OBJECTID;
+    private final String KEY_FIRST_NAME = Constants.KEY_FIRST_NAME;
+    private final String KEY_LAST_NAME = Constants.KEY_LAST_NAME;
 
     RecyclerView rvFriends;
 
     private FriendsAdapter adapter;
 
-    // store current user's groups
-    private List<ParseObject> allGroups;
+    // store current user's groups, only relevant info
+    private List<JSONObject> allGroups;
 
-    // temporary list of current user's groups
-    private List<ParseObject> collectGroups;
+
+    // temporary list of current user's groups, only relevant info
+    private List<JSONObject> adapterInfo;
+
+    boolean onLastGroup;
+
+    // store whether user needs to match/ others have not finished matching/ or matching done for each group
+    // passed to adapter to display correct button text for each group
+    private JSONObject groupStates;
 
     SwipeRefreshLayout swipeContainer;
 
@@ -117,9 +140,8 @@ public class GroupsFragment extends Fragment implements MatchesQuery.getCurrUser
 
     @Override
     public void onFinishGetCurrUserGroups(List<ParseObject> objects, ParseException e) {
-        collectGroups = new ArrayList<>();
         if (e == null) {
-            // if user is not part of any groups
+            // if no groups, don't have to add anything to adapter
             if (objects.size() == 0) {
                 Toast.makeText(getContext(), "Click the plus tab to add friends!", Toast.LENGTH_SHORT).show();
                 adapter.clear();
@@ -127,21 +149,53 @@ public class GroupsFragment extends Fragment implements MatchesQuery.getCurrUser
                 swipeContainer.setRefreshing(false);
                 return;
             } else {
-                for (ParseObject parseObject : objects) {
-                    // add group to running list
-                    collectGroups.add(parseObject.getParseObject("groupId"));
+                // keep track of when last group so know when to update adapter
+                onLastGroup = false;
+                // iterate through every group
+                for (int i = 0; i < objects.size(); i++) {
+
+                    if (i == (objects.size() - 1)) {
+                        // mark when on last group to check if any group was repeated
+                        onLastGroup = true;
+                    }
+                    // initialize adapterInfo
+                    adapterInfo = new ArrayList<>();
+
+                    ParseObject group = objects.get(i).getParseObject(Constants.KEY_GROUPID);
+
+                    // query gets all users from group and uses that to
+                    // get basic info about each group that will be displayed
+
+                    // I do the logic in this function for cleanliness and because it has
+                    // easier access to both the group object and users of group
+                    matchQuery.getBasicGroupInfo(currentUser, group, this);
                 }
-                // once all groups added, clear and load adapter
+            }
+        }
+        else {
+            Toast.makeText(getContext(), "Error getting your groups.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    public void onFinishBasicGroupInfo(JSONObject object, ParseException e) {
+        // object is not a "Group" object, just object with the groupId, state of group, and other group members
+        if (e == null) {
+            // add group to temp list
+            adapterInfo.add(object);
+            // once all added, update adapter
+            if (onLastGroup) {
+                // set adapter to new list
                 adapter.clear();
-                allGroups.addAll(collectGroups);
+                // passing temp list to list associated with adapter
+                allGroups.addAll(adapterInfo);
                 adapter.notifyDataSetChanged();
                 swipeContainer.setRefreshing(false);
             }
         } else {
-            Toast.makeText(getContext(), "Error fetching groups", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), "Error fetching your groups", Toast.LENGTH_SHORT).show();
         }
     }
-
 
     private void getCurrentUser() {
         if (ParseUser.getCurrentUser() != null) {

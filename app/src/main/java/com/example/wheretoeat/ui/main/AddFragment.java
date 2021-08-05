@@ -29,6 +29,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.example.wheretoeat.Constants;
 import com.example.wheretoeat.MainActivity;
 import com.example.wheretoeat.ParseService.GroupQuery;
 import com.example.wheretoeat.ParseService.MatchesQuery;
@@ -73,6 +74,7 @@ public class AddFragment extends Fragment implements
 {
 
     public static final String TAG = "AddFragment";
+    public static final int INT_NON_GROUP = 1;
 
     ParseUser currentUser;
 
@@ -217,7 +219,7 @@ public class AddFragment extends Fragment implements
 
     private void checkGroupExists() {
         // if adding more than one user, don't check if relation already exists (can have multiple groups of same users)
-        if (usernames.size() != 1) {
+        if (usernames.size() != INT_NON_GROUP) {
             isGroup = true;
             // launch preferences dialog fragment
             showEditDialog();
@@ -245,7 +247,7 @@ public class AddFragment extends Fragment implements
                     onLastGroup = true;
                 }
 
-                ParseObject group = objects.get(i).getParseObject(getString(R.string.groupId));
+                ParseObject group = objects.get(i).getParseObject(Constants.KEY_GROUPID);
                 // get the other users in the same group as user
                 matchQuery.getUsersInGroup(currentUser, group, true, true, this);
 
@@ -259,9 +261,9 @@ public class AddFragment extends Fragment implements
     public void onFinishGetUsersInGroup(List<ParseObject> objects, ParseException e) {
         if (e == null) {
             // if this is a 2 person group
-            if (objects.size() == 1) {
+            if (objects.size() == INT_NON_GROUP) {
                 // check if the other user matches the user that was to be added
-                if (objects.get(0).getParseObject(getString(R.string.user)).getString(getString(R.string.username)).equals(usernames.get(0))){
+                if (objects.get(0).getParseObject(Constants.KEY_USER).getString(Constants.KEY_USERNAME).equals(usernames.get(0))){
                     groupAlreadyExists = true;
                     Toast.makeText(getContext(), "You've already added this user", Toast.LENGTH_SHORT).show();
                 }
@@ -367,7 +369,7 @@ public class AddFragment extends Fragment implements
                 SharedPreferences sharedPreferences = getContext().getSharedPreferences("FB_userId", Context.MODE_PRIVATE);
                 String currentUserId = sharedPreferences.getString("facebook_user_id", null);
                 ParseQuery<ParseUser> query = ParseUser.getQuery();
-                query.whereEqualTo(getString(R.string.objectId), currentUserId);
+                query.whereEqualTo(Constants.KEY_OBJECTID, currentUserId);
                 // start an asynchronous call for posts
                 query.findInBackground(new FindCallback<ParseUser>() {
                     @Override
@@ -375,7 +377,7 @@ public class AddFragment extends Fragment implements
                         if (e == null) {
                             currentUser = objects.get(0);
                         } else {
-                            Log.e(TAG, "Error getting Parse user" + e.getMessage());
+                            Toast.makeText(getContext(), "Error getting user", Toast.LENGTH_SHORT).show();
                         }
 
                     }
@@ -388,8 +390,8 @@ public class AddFragment extends Fragment implements
         // step one : converting comma separate String to array of String
         String[] elements = usernames.replaceAll("\\s", "").split(",");
         // step two : convert String array to list of String
-        List<String> fixedLenghtList = Arrays.asList(elements);
+        List<String> fixedLengthList = Arrays.asList(elements);
         // step three : copy fixed list to an ArrayList
-        return new ArrayList<String>(fixedLenghtList);
+        return new ArrayList<String>(fixedLengthList);
     }
 }

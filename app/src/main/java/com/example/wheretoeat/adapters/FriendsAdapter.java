@@ -3,6 +3,8 @@ package com.example.wheretoeat.adapters;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Resources;
+import android.graphics.Typeface;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,35 +17,48 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.wheretoeat.Constants;
 import com.example.wheretoeat.ParseService.MatchesQuery;
-import com.example.wheretoeat.modals.Friends;
 import com.example.wheretoeat.MatchActivity;
 import com.example.wheretoeat.R;
 import com.example.wheretoeat.ViewMatchesActivity;
-import com.example.wheretoeat.modals.Matches;
 import com.facebook.AccessToken;
 import com.parse.FindCallback;
-import com.parse.Parse;
 import com.parse.ParseException;
 import com.parse.ParseObject;
 import com.parse.ParseQuery;
 import com.parse.ParseUser;
 
-import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.ViewHolder>{
 
-    private static final String TAG = "FriendsAdapter";
+    // Constants
+
+    // Parse data json keys
+    private final String KEY_USER = Constants.KEY_USER;
+    private final String KEY_GROUPNAME = Constants.KEY_GROUPNAME;
+    private final String KEY_MUTUALMATCHES = Constants.KEY_MUTUALMATCHES;
+    private final String KEY_MATCHES = Constants.KEY_MATCHES;
+    private final String KEY_OBJECTID = Constants.KEY_OBJECTID;
+    private final String KEY_FIRST_NAME = Constants.KEY_FIRST_NAME;
+    private final String KEY_LAST_NAME = Constants.KEY_LAST_NAME;
+
+    // key for intent extra to MatchActivity and ViewMatchesActivity
+    private final String KEY_INTENT = "friendGroup";
+
+    // Toast messages
+    private final String USER_ERROR = "Error getting Parse User";
 
 
     private Context context;
 
     // list of current user's groups
-    private List<ParseObject> groups;
+    private List<JSONObject> groups;
 
     ParseUser currentUser;
 
@@ -51,7 +66,7 @@ public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.ViewHold
     MatchesQuery matchesQuery;
 
 
-    public FriendsAdapter(Context context, List<ParseObject> users) {
+    public FriendsAdapter(Context context, List<JSONObject> users) {
         this.context = context;
         this.groups = users;
     }
@@ -67,8 +82,12 @@ public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.ViewHold
 
 
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        ParseObject group = groups.get(position);
-        holder.bind(group);
+        JSONObject group = groups.get(position);
+        try {
+            holder.bind(group);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -82,14 +101,14 @@ public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.ViewHold
     }
 
 
-    class ViewHolder extends RecyclerView.ViewHolder implements MatchesQuery.getUsersInGroupInterface {
+    class ViewHolder extends RecyclerView.ViewHolder{
 
         private TextView tvName;
         private TextView tvGroupUsers;
         private Button btnBeginMatch;
 
         // stores Parse Object of current group
-        private ParseObject currGroup;
+        private String currGroupId;
 
 
         public ViewHolder(@NonNull View itemView) {
@@ -110,11 +129,11 @@ public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.ViewHold
                 // start activity based button text, which is set based on state of group's matches
 
                 // if current user has not matches for this group
-                if (btnBeginMatch.getText().equals("START MATCHING")) {
+                if (btnBeginMatch.getText().equals(context.getString(R.string.StartMatching))) {
                     // Create intent to begin
                     Intent intent = new Intent(context, MatchActivity.class);
                     // add group's ID as extra
-                    intent.putExtra("friendGroup", currGroup.getObjectId());
+                    intent.putExtra(KEY_INTENT, currGroupId);
                     // start matching activity
                     context.startActivity(intent);
                 }
@@ -125,7 +144,7 @@ public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.ViewHold
                     // set intent for View Matches activity
                     Intent intent = new Intent(context, ViewMatchesActivity.class);
                     // add group's ID as extra
-                    intent.putExtra("friendGroup", currGroup.getObjectId());
+                    intent.putExtra(KEY_INTENT, currGroupId);
                     // show the activity
                     context.startActivity(intent);
                 }
@@ -135,99 +154,43 @@ public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.ViewHold
 
 
 
-        public void bind(ParseObject group) {
+        public void bind(JSONObject group) throws JSONException {
             // store group in global variable
-            currGroup = group;
-
+            currGroupId = group.getString(MatchesQuery.KEY_GROUPID);
             // reset group name to visible in case disabled with previous group
             tvName.setVisibility(View.VISIBLE);
 
+            // depending on state of group adjust button text
+            switch(group.getString(MatchesQuery.KEY_GROUP_STATE)) {
+                case MatchesQuery.STATE_START:
+                    btnBeginMatch.setText(R.string.StartMatching);
+                    btnBeginMatch.setEnabled(true);
+                    break;
+                case MatchesQuery.STATE_VIEW:
+                    btnBeginMatch.setText(R.string.ViewMatches);
+                    btnBeginMatch.setEnabled(true);
+                    break;
+                case MatchesQuery.STATE_WAIT:
+                    btnBeginMatch.setText(R.string.WaitMatches);
+                    btnBeginMatch.setEnabled(false);
+                    break;
+            }
 
-            matchesQuery.getUsersInGroup(currentUser, group, true, false, this);
-
-
-        }
-
-        @Override
-        public void onFinishGetUsersInGroup(List<ParseObject> objects, ParseException e) {
-            if (e == null) {
-
-                // new array to store other users in group
-                List<ParseUser> groupUsers = new ArrayList<>();
-
-                // iterate through all users in group
-                for (ParseObject parseObject : objects) {
-                    // if iterating on current user
-                    if (parseObject.getParseUser("user").getObjectId().equals(currentUser.getObjectId())) {
-                        // if current user has not started matching
-                        if (parseObject.getJSONArray("matches") == null) {
-                            // make UI changes on UI thread
-                            ((AppCompatActivity) context).runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    btnBeginMatch.setText("START MATCHING");
-                                    btnBeginMatch.setEnabled(true);
-                                }
-                            });
-                        }
-                        // if the entire group has finished matching (mutual matches recorded)
-                        else if (currGroup.getJSONArray("mutualMatches") != null) {
-                            ((AppCompatActivity) context).runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    btnBeginMatch.setText("VIEW MATCHES");
-                                    btnBeginMatch.setEnabled(true);
-                                }
-                            });
-                        }
-                        // if user has started matching, but no mutual matches recorded, then group is not finished
-                        else {
-                            ((AppCompatActivity) context).runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    btnBeginMatch.setText("WAITING FOR MATCHES");
-                                    // nothing to do while waiting for other's matches
-                                    btnBeginMatch.setEnabled(false);
-                                }
-                            });
-                        }
-
-                    } else {
-                        // if group is only 2 people, remove group name text view from view
-                        if (objects.size() == 2) {
-                            tvName.setVisibility(View.GONE);
-
-                            // if group has 3+ people display group name
-                        } else {
-                            tvName.setText(currGroup.get("groupName").toString());
-                        }
-
-                        // add other users to groupUsers to be displayed with group info
-                        groupUsers.add(parseObject.getParseUser("user"));
-                    }
-                }
-                // display first and last names of every user in group
-                tvGroupUsers.setText(getGroupNames(groupUsers));
+            String groupName = group.getString(MatchesQuery.KEY_GROUP_NAME);
+            // if only a 2 person group, no group name, so remove group name text view and bold name of other user
+            if ( groupName.equals("")) {
+                tvName.setVisibility(View.GONE);
+                tvGroupUsers.setTypeface(Typeface.DEFAULT_BOLD);
             } else {
-                Toast.makeText(FriendsAdapter.this.context, "Error getting groups", Toast.LENGTH_SHORT).show();
+                tvName.setText(groupName);
+                // make sure text view is not left bold from previous group
+                tvGroupUsers.setTypeface(Typeface.DEFAULT);
             }
-        }
 
+            tvGroupUsers.setText(group.getString(MatchesQuery.KEY_GROUP_MEMBERS));
 
-        private String getGroupNames(List<ParseUser> usersList) {
-            String names = "";
-            for (int i = 0; i < usersList.size(); i++) {
-                if (i == 0) {
-                    names = usersList.get(i).getString("firstName") + " " + usersList.get(i).getString("lastName");
-                } else {
-                    names = names + ", " + usersList.get(i).getString("firstName") + " " + usersList.get(i).getString("lastName");
-                }
-            }
-            return names;
         }
   }
-
-
     private void getCurrentUser() {
         if (ParseUser.getCurrentUser() != null) {
             currentUser = ParseUser.getCurrentUser();
@@ -238,7 +201,7 @@ public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.ViewHold
                 SharedPreferences sharedPreferences = this.context.getSharedPreferences("FB_userId", Context.MODE_PRIVATE);
                 String currentUserId = sharedPreferences.getString("facebook_user_id", null);
                 ParseQuery<ParseUser> query = ParseUser.getQuery();
-                query.whereEqualTo("objectId", currentUserId);
+                query.whereEqualTo(KEY_OBJECTID, currentUserId);
                 // start an asynchronous call for posts
                 query.findInBackground(new FindCallback<ParseUser>() {
                     @Override
@@ -246,7 +209,7 @@ public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.ViewHold
                         if (e == null) {
                             currentUser = objects.get(0);
                         } else {
-                            Log.e(TAG, "Error getting Parse user" + e.getMessage());
+                            Toast.makeText(FriendsAdapter.this.context, USER_ERROR, Toast.LENGTH_SHORT).show();
                         }
 
                     }

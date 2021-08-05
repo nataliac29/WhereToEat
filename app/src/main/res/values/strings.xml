@@ -19,5 +19,8 @@
     <string name="firstName">firstName</string>
     <string name="lastName">lastName</string>
     <string name="createdAt">createdAt</string>
+    <string name="ViewMatches">VIEW MATCHES</string>
+    <string name="StartMatching">START MATCHING</string>
+    <string name="WaitMatches">WAITING FOR MATCHES</string>
 
 </resources>

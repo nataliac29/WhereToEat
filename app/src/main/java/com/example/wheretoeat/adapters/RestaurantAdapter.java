@@ -59,33 +59,6 @@ public class RestaurantAdapter extends BaseAdapter {
         this.onClickListener = onClickListener;
     }
 
-//    //Usually involves inflating a layout from XML and retuning the holder
-//    @NotNull
-//    @Override
-//    public ViewHolder onCreateViewHolder(@NonNull @NotNull ViewGroup parent, int viewType) {
-//        View restaurantView = LayoutInflater.from(context).inflate(R.layout.item_restaurant, parent, false);
-//        likedRestaurants = new JSONArray();
-//        return new ViewHolder(restaurantView);
-//    }
-//    //involves populating data into the item through holder
-//    @Override
-//    public void onBindViewHolder(@NonNull @NotNull ViewHolder holder, int position) {
-//        //Get the movie at the passed in position
-//        JSONObject restaurant = null;
-//        try {
-//            restaurant = (JSONObject) restaurants.get(position);
-//        } catch (JSONException e) {
-//            e.printStackTrace();
-//        }
-//
-//        // Bind the movie data into the viewholder
-//        try {
-//            holder.bind(restaurant);
-//        } catch (JSONException e) {
-//            e.printStackTrace();
-//        }
-//    }
-
     // Returns the total count of items in the list
     @Override
     public int getCount() {

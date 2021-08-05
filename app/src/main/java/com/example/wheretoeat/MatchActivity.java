@@ -161,9 +161,15 @@ public class MatchActivity extends AppCompatActivity implements
             @Override
             public void cardsDepleted() {
                 // this method is called when no card is present
-                Toast.makeText(MatchActivity.this, "Done!", Toast.LENGTH_SHORT).show();
+                if (likedRestaurants.length() >= 1) {
+                    Toast.makeText(MatchActivity.this, "Done!", Toast.LENGTH_SHORT).show();
                 // get row in match table corresponding to current user and group
-                matchesQuery.getMatchRow(currentUser, currGroupObject, MatchActivity.this);
+                    matchesQuery.getMatchRow(currentUser, currGroupObject, MatchActivity.this);
+                }
+                else {
+                    Toast.makeText(MatchActivity.this, "Must like at least one restaurant", Toast.LENGTH_SHORT).show();
+                    setAdapter();
+                }
             }
 
             @Override
