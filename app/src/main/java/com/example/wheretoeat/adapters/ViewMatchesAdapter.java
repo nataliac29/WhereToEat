@@ -15,6 +15,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.example.wheretoeat.Constants;
 import com.example.wheretoeat.R;
 import com.example.wheretoeat.RestaurantDetailsActivity;
 
@@ -26,9 +27,14 @@ import org.json.JSONObject;
 import jp.wasabeef.glide.transformations.RoundedCornersTransformation;
 
 public class ViewMatchesAdapter extends RecyclerView.Adapter<ViewMatchesAdapter.ViewHolder>  {
+
+
     Context context;
     JSONArray restaurants;
     String friendId;
+
+    private static final Integer FIRST_CATEGORY = 0;
+    private static final String INTENT_KEY = "restaurantId";
 
 
     public ViewMatchesAdapter(Context context, JSONArray restaurants, String friendId ) {
@@ -106,7 +112,7 @@ public class ViewMatchesAdapter extends RecyclerView.Adapter<ViewMatchesAdapter.
                 Intent intent = new Intent(context, RestaurantDetailsActivity.class);
                 // serialize the movie using parceler, use its short name as a key
                 try {
-                    intent.putExtra("restaurantId", restaurant.getString("id"));
+                    intent.putExtra(INTENT_KEY, restaurant.getString(Constants.KEY_ID));
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -118,11 +124,11 @@ public class ViewMatchesAdapter extends RecyclerView.Adapter<ViewMatchesAdapter.
 
 
         public void bind(JSONObject restaurant) throws JSONException {
-            tvRestaurantName.setText(restaurant.getString("name"));
-            tvRestaurantCategories.setText(restaurant.getJSONArray("categories").getString(0));
-            double rating = restaurant.getDouble("rating") / 2.0f;
+            tvRestaurantName.setText(restaurant.getString(Constants.KEY_NAME));
+            tvRestaurantCategories.setText(restaurant.getJSONArray(Constants.KEY_CATEGORIES).getString(FIRST_CATEGORY));
+            double rating = restaurant.getDouble(Constants.KEY_RATING) / 2.0f;
             tvRestaurantRating.setRating((float) rating);
-            btnLikeRestaurant.setText("View more details");
+            btnLikeRestaurant.setText(R.string.ViewDetails);
 
 
             ivCover = itemView.findViewById(R.id.ivCover);
@@ -132,7 +138,7 @@ public class ViewMatchesAdapter extends RecyclerView.Adapter<ViewMatchesAdapter.
             int margin = 0;
 
             try {
-                imageUrl = restaurant.getString("imageUrl");
+                imageUrl = restaurant.getString(Constants.KEY_IMAGE_URL);
             } catch (JSONException e) {
                 imageUrl = null;
                 e.printStackTrace();

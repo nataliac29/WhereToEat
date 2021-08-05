@@ -22,5 +22,8 @@
     <string name="ViewMatches">VIEW MATCHES</string>
     <string name="StartMatching">START MATCHING</string>
     <string name="WaitMatches">WAITING FOR MATCHES</string>
+    <string name="ViewDetails">View more details</string>
+    <string name="MatchLike">LIKE</string>
+    <string name="MatchDislike">clear</string>
 
 </resources>

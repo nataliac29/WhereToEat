@@ -19,6 +19,7 @@ import androidx.appcompat.view.menu.MenuView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.example.wheretoeat.Constants;
 import com.example.wheretoeat.DataTransferInterface;
 import com.example.wheretoeat.R;
 import com.example.wheretoeat.modals.Restaurant;
@@ -43,8 +44,10 @@ public class RestaurantAdapter extends BaseAdapter {
     Context context;
     JSONArray restaurants;
     JSONObject restaurant;
-    JSONArray likedRestaurants;
-    String friendId;
+
+
+    private static final Integer FIRST_CATEGORY = 0;
+
 
     public interface OnClickListener {
         void onRestaurantLike();
@@ -116,7 +119,7 @@ public class RestaurantAdapter extends BaseAdapter {
         int margin = 0;
 
         try {
-            imageUrl = restaurant.getString("imageUrl");
+            imageUrl = restaurant.getString(Constants.KEY_IMAGE_URL);
         } catch (JSONException e) {
              imageUrl = null;
             e.printStackTrace();
@@ -130,24 +133,24 @@ public class RestaurantAdapter extends BaseAdapter {
 
 
         try {
-            tvRestaurantName.setText(restaurant.getString("name"));
+            tvRestaurantName.setText(restaurant.getString(Constants.KEY_NAME));
         } catch (JSONException e) {
             e.printStackTrace();
         }
         try {
-            tvRestaurantCategories.setText(restaurant.getJSONArray("categories").getString(0));
+            tvRestaurantCategories.setText(restaurant.getJSONArray(Constants.KEY_CATEGORIES).getString(FIRST_CATEGORY));
         } catch (JSONException e) {
             e.printStackTrace();
         }
         double rating = 0;
         try {
-            rating = restaurant.getDouble("rating") / 2.0f;
+            rating = restaurant.getDouble(Constants.KEY_RATING) / 2.0f;
         } catch (JSONException e) {
             e.printStackTrace();
         }
         tvRestaurantRating.setRating((float) rating);
-        btnLikeRestaurant.setText("LIKE");
-        btnDislike.setText("clear");
+        btnLikeRestaurant.setText(R.string.MatchLike);
+        btnDislike.setText(R.string.MatchDislike);
 
         btnLikeRestaurant.setOnClickListener(new View.OnClickListener() {
             @Override

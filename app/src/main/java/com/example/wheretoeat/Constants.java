@@ -16,4 +16,15 @@ public class Constants {
     public static final String KEY_FIRST_NAME = "firstName";
     public static final String KEY_LAST_NAME = "lastName";
 
+
+    // Yelp API json constants
+    public static final String KEY_CATEGORIES = "categories";
+    public static final String KEY_RATING = "rating";
+    public static final String KEY_IMAGE_URL = "imageURL";
+    public static final String KEY_ID = "id";
+    public static final String KEY_NAME = "name";
+
+
+
+
 }
