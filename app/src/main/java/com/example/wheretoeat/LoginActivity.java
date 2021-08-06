@@ -5,57 +5,51 @@ import android.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.app.ProgressDialog;
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import com.example.wheretoeat.modals.CustomUser;
+import com.example.wheretoeat.modals.CurrentUser;
 import com.facebook.AccessToken;
-import com.facebook.CallbackManager;
-import com.facebook.FacebookCallback;
-import com.facebook.FacebookException;
+
 import com.facebook.GraphRequest;
-import com.facebook.GraphResponse;
-import com.facebook.ProfileTracker;
-import com.facebook.login.LoginResult;
-import com.facebook.login.widget.LoginButton;
-import com.parse.FindCallback;
+
 import com.parse.LogInCallback;
 import com.parse.ParseException;
-import com.parse.ParseQuery;
 import com.parse.ParseUser;
-import com.parse.SignUpCallback;
 import com.parse.facebook.ParseFacebookUtils;
 
 import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 
 
 public class LoginActivity extends AppCompatActivity {
-    public static final String TAG = "LoginActivity";
+
+    // Toast/Alert messages
+    public static final String ERROR_LOGGING_IN = "Error logging in";
+    public static final String SUCCESS = "Success!";
+    public static final String OK = "OK";
+    public static final String LOGIN_CANCELLED = "The user cancelled the Facebook login.";
+    public static final String NEW_USER = "User signed up and logged in through Facebook.";
+    public static final String USER_LOGGED_IN = "User logged in through Facebook.";
+    public static final String WELCOME = "Welcome back!";
+    public static final String OH_YOU = "Oh, you!";
+    public static final String PROFILE = "public_profile";
+    public static final String EMAIL = "email";
+    public static final String WAIT = "Please, wait a moment.";
+    public static final String IN_PROGRESS = "Logging in...";
+
+
     private EditText etUsername;
     private EditText etPassword;
     private Button btnLogin;
     private Button btnToSignUp;
     private Button btnLoginFB;
-
-    private String username;
-
-    //    Facebook Login
-    CallbackManager callbackManager;
-    LoginButton loginButton;
-    ProfileTracker mProfileTracker;
-
 
 
     @Override
@@ -83,7 +77,6 @@ public class LoginActivity extends AppCompatActivity {
         btnLogin.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.i(TAG, "OnClick login button");
                 String username = etUsername.getText().toString();
                 String password = etPassword.getText().toString();
                 loginUser(username, password);
@@ -93,7 +86,6 @@ public class LoginActivity extends AppCompatActivity {
         btnToSignUp.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.i(TAG, "OnClick login button");
                 // create intent for the new activity
                 Intent intent = new Intent(LoginActivity.this, SignupActivity.class);
                 // show the activity
@@ -105,29 +97,27 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 final ProgressDialog dialog = new ProgressDialog(LoginActivity.this);
-                dialog.setTitle("Please, wait a moment.");
-                dialog.setMessage("Logging in...");
+                dialog.setTitle(WAIT);
+                dialog.setMessage(IN_PROGRESS);
                 dialog.show();
-                Collection<String> permissions = Arrays.asList("public_profile", "email");
+                Collection<String> permissions = Arrays.asList(PROFILE, EMAIL);
                 ParseFacebookUtils.logInWithReadPermissionsInBackground(LoginActivity.this, permissions, new LogInCallback() {
                     @Override
                     public void done(ParseUser user, ParseException e) {
                         dialog.dismiss();
                         if (e == null) {
                             if (user == null) {
-                                Toast.makeText(LoginActivity.this, "The user cancelled the Facebook login.", Toast.LENGTH_LONG).show();
-                                Log.d("FacebookLoginExample", "Uh oh. The user cancelled the Facebook login.");
+                                Toast.makeText(LoginActivity.this, LOGIN_CANCELLED, Toast.LENGTH_LONG).show();
                             } else if (user.isNew()) {
-                                Toast.makeText(LoginActivity.this, "User signed up and logged in through Facebook.", Toast.LENGTH_LONG).show();
-                                Log.d("FacebookLoginExample", "User signed up and logged in through Facebook!");
+                                Toast.makeText(LoginActivity.this, NEW_USER, Toast.LENGTH_LONG).show();
+                                CurrentUser.getInstance().currUser = ParseUser.getCurrentUser();
                                 getUserDetailFromFB();
                             } else {
-                                Toast.makeText(LoginActivity.this, "User logged in through Facebook.", Toast.LENGTH_LONG).show();
-                                Log.d("FacebookLoginExample", "User logged in through Facebook!");
-                                showAlert("Oh, you!", "Welcome back!");
+                                Toast.makeText(LoginActivity.this, USER_LOGGED_IN, Toast.LENGTH_LONG).show();
+                                CurrentUser.getInstance().currUser = ParseUser.getCurrentUser();
+                                showAlert(OH_YOU, WELCOME);
                             }
                         } else {
-                            Log.e("FacebookLoginExample", "done: ", e);
                             Toast.makeText(LoginActivity.this, e.getMessage(), Toast.LENGTH_LONG).show();
                         }
                     }
@@ -144,17 +134,15 @@ public class LoginActivity extends AppCompatActivity {
 
     // Native app login
     private void loginUser(String username, String password) {
-        Log.i(TAG, "Attempting to login user" + username);
         ParseUser.logInInBackground(username, password, new LogInCallback() {
             @Override
             public void done(ParseUser user, ParseException e) {
                 if (e != null) {
-                    Log.e(TAG, "Issue with login", e);
-                    return;
+                    Toast.makeText(LoginActivity.this, ERROR_LOGGING_IN, Toast.LENGTH_LONG).show();
                 }
                 // Navigate to main activity if user has signed in successfully
                 goMainActivity();
-                Toast.makeText(LoginActivity.this, "Success!", Toast.LENGTH_SHORT);
+                Toast.makeText(LoginActivity.this, SUCCESS, Toast.LENGTH_SHORT);
             }
 
         });
@@ -171,9 +159,8 @@ public class LoginActivity extends AppCompatActivity {
     private void getUserDetailFromFB() {
         GraphRequest request = GraphRequest.newMeRequest(AccessToken.getCurrentAccessToken(), (object, response) -> {
             ParseUser user = ParseUser.getCurrentUser();
-
+            // get info from token to populate user row, get name and user email for username
             try {
-                Log.e(TAG, object.getString("name"));
                 if (object.has("name"))
                     user.put("name", (object.getString("name")));
                 if (object.has("email"))
@@ -199,7 +186,7 @@ public class LoginActivity extends AppCompatActivity {
         AlertDialog.Builder builder = new AlertDialog.Builder(this)
                 .setTitle(title)
                 .setMessage(message)
-                .setPositiveButton("OK", (dialog, which) -> {
+                .setPositiveButton(OK, (dialog, which) -> {
                     dialog.cancel();
                     Intent intent = new Intent(this, MainActivity.class);
                     intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);

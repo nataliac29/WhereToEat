@@ -277,7 +277,7 @@ public class MatchesQuery {
     private String getGroupNames(List<ParseUser> usersList) {
         String names = "";
         for (int i = 0; i < usersList.size(); i++) {
-            names = names + ", " + usersList.get(i).getString(Constants.KEY_FIRST_NAME) + " " + usersList.get(i).getString(Constants.KEY_LAST_NAME);
+            names = names + ", " + usersList.get(i).getString(Constants.KEY_NAME);
         }
         // substring removes the comma put before the first group member
         return names.substring(2);

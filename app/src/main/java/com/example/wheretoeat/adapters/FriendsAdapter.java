@@ -37,16 +37,6 @@ import java.util.List;
 
 public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.ViewHolder>{
 
-    // Constants
-
-    // Parse data json keys
-    private final String KEY_USER = Constants.KEY_USER;
-    private final String KEY_GROUPNAME = Constants.KEY_GROUPNAME;
-    private final String KEY_MUTUALMATCHES = Constants.KEY_MUTUALMATCHES;
-    private final String KEY_MATCHES = Constants.KEY_MATCHES;
-    private final String KEY_OBJECTID = Constants.KEY_OBJECTID;
-    private final String KEY_FIRST_NAME = Constants.KEY_FIRST_NAME;
-    private final String KEY_LAST_NAME = Constants.KEY_LAST_NAME;
 
     // key for intent extra to MatchActivity and ViewMatchesActivity
     private final String KEY_INTENT = "friendGroup";
@@ -74,7 +64,7 @@ public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.ViewHold
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        getCurrentUser();
+        currentUser = ParseUser.getCurrentUser();
         matchesQuery = MatchesQuery.getInstance();
         View view = LayoutInflater.from(context).inflate(R.layout.item_friend, parent, false);
         return new ViewHolder(view);
@@ -191,31 +181,6 @@ public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.ViewHold
 
         }
   }
-    private void getCurrentUser() {
-        if (ParseUser.getCurrentUser() != null) {
-            currentUser = ParseUser.getCurrentUser();
-        } else {
-            AccessToken accessToken = AccessToken.getCurrentAccessToken();
-            boolean isLoggedIn = accessToken != null && !accessToken.isExpired();
-            if (isLoggedIn) {
-                SharedPreferences sharedPreferences = this.context.getSharedPreferences("FB_userId", Context.MODE_PRIVATE);
-                String currentUserId = sharedPreferences.getString("facebook_user_id", null);
-                ParseQuery<ParseUser> query = ParseUser.getQuery();
-                query.whereEqualTo(KEY_OBJECTID, currentUserId);
-                // start an asynchronous call for posts
-                query.findInBackground(new FindCallback<ParseUser>() {
-                    @Override
-                    public void done(List<ParseUser> objects, ParseException e) {
-                        if (e == null) {
-                            currentUser = objects.get(0);
-                        } else {
-                            Toast.makeText(FriendsAdapter.this.context, USER_ERROR, Toast.LENGTH_SHORT).show();
-                        }
 
-                    }
-                });
-            }
-        }
-    }
 
 }

@@ -16,6 +16,7 @@ import com.daprlabs.cardstack.SwipeDeck;
 import com.example.wheretoeat.ParseService.GroupQuery;
 import com.example.wheretoeat.ParseService.MatchesQuery;
 import com.example.wheretoeat.adapters.RestaurantAdapter;
+import com.example.wheretoeat.modals.CurrentUser;
 import com.example.wheretoeat.modals.Friends;
 import com.example.wheretoeat.modals.Matches;
 import com.facebook.AccessToken;
@@ -86,9 +87,11 @@ public class MatchActivity extends AppCompatActivity implements
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_match);
+
+        currentUser = CurrentUser.getInstance().currUser;
+
         cardStack = findViewById(R.id.swipe_deck);
 
-        getCurrentUser();
 
         restaurants = new JSONArray();
 
@@ -304,31 +307,5 @@ public class MatchActivity extends AppCompatActivity implements
             cardStack.swipeTopCardLeft(100);
         }
 
-    private void getCurrentUser() {
-        if (ParseUser.getCurrentUser() != null) {
-            currentUser = ParseUser.getCurrentUser();
-        } else {
-            AccessToken accessToken = AccessToken.getCurrentAccessToken();
-            boolean isLoggedIn = accessToken != null && !accessToken.isExpired();
-            if (isLoggedIn) {
-                SharedPreferences sharedPreferences = this.getSharedPreferences("FB_userId", Context.MODE_PRIVATE);
-                String currentUserId = sharedPreferences.getString("facebook_user_id", null);
-                ParseQuery<ParseUser> query = ParseUser.getQuery();
-                query.whereEqualTo(Constants.KEY_OBJECTID, currentUserId);
-                // start an asynchronous call for posts
-                query.findInBackground(new FindCallback<ParseUser>() {
-                    @Override
-                    public void done(List<ParseUser> objects, ParseException e) {
-                        if (e == null) {
-                            currentUser = objects.get(0);
-                        } else {
-                            Toast.makeText(MatchActivity.this, "Error getting user", Toast.LENGTH_SHORT).show();
-                        }
-
-                    }
-                });
-            }
-        }
-    }
 
 }

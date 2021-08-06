@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 
+import com.example.wheretoeat.modals.CurrentUser;
 import com.facebook.AccessToken;
 import com.facebook.Profile;
 import com.facebook.login.LoginManager;
@@ -45,33 +46,20 @@ public class MainActivity extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (ParseUser.getCurrentUser() != null) {
-                    ParseUser.logOut();
-                    Intent i = new Intent(MainActivity.this, LoginActivity.class);
-                    i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP); // this makes sure the Back button won't work
-                    i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); // same as above
-                    startActivity(i);
-                }
+                ParseUser.logOut();
+                CurrentUser.getInstance().currUser = null;
                 AccessToken accessToken = AccessToken.getCurrentAccessToken();
-                Log.e("Main_Activity", "access token" + accessToken);
                 boolean isLoggedIn = accessToken != null && !accessToken.isExpired();
                 if (isLoggedIn) {
-                    removeIdSharePref();
                     LoginManager.getInstance().logOut();
-                    Intent i = new Intent(MainActivity.this, LoginActivity.class);
-                    i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP); // this makes sure the Back button won't work
-                    i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); // same as above
-                    startActivity(i);
                 }
-            }
-        });
+                Intent i = new Intent(MainActivity.this, LoginActivity.class);
+                i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP); // this makes sure the Back button won't work
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); // same as above
+                startActivity(i);
+                }
+
+            });
     }
 
-    private void removeIdSharePref() {
-        SharedPreferences sharedPreferences = getSharedPreferences("FB_userId", Context.MODE_PRIVATE);
-
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.putString("facebook_user_id", null);
-        editor.apply();
-    }
 }

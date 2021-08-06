@@ -45,7 +45,6 @@ public class SignupActivity extends AppCompatActivity {
         btnSignUp.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.i(TAG, "OnClick login button");
                 String firstName = etSignupFirstName.getText().toString();
                 String lastName = etSignupLastName.getText().toString();
                 String username = etSignupUsername.getText().toString();
@@ -61,7 +60,6 @@ public class SignupActivity extends AppCompatActivity {
 
 
     public void signupUser(String username, String password, String firstName, String lastName) {
-        Log.e(TAG, "In signup user");
         ParseUser user = new ParseUser();
         CustomUser customUser = new CustomUser(user);
         // Set core properties
@@ -72,13 +70,10 @@ public class SignupActivity extends AppCompatActivity {
         // Invoke signUpInBackground
         user.signUpInBackground(new SignUpCallback() {
             public void done(ParseException e) {
-                Log.e(TAG, "Issue with login 1", e);
                 if (e == null) {
-                    Log.e(TAG, "In signup user --success");
                     goMainActivity();
                     Toast.makeText(SignupActivity.this, "Success!", Toast.LENGTH_SHORT);
                 } else {
-                    Log.e(TAG, "Issue with login", e);
                     Toast.makeText(SignupActivity.this, "Error!", Toast.LENGTH_SHORT);
                     return;
                 }

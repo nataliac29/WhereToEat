@@ -22,6 +22,7 @@ import com.example.wheretoeat.ParseService.GroupQuery;
 import com.example.wheretoeat.ParseService.MatchesQuery;
 import com.example.wheretoeat.ParseService.UserQuery;
 import com.example.wheretoeat.R;
+import com.example.wheretoeat.modals.CurrentUser;
 import com.example.wheretoeat.modals.Restaurant;
 import com.example.wheretoeat.YelpService;
 import com.facebook.AccessToken;
@@ -121,7 +122,7 @@ public class AddFragment extends Fragment implements
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         // get current user from beginning
-        getCurrentUser();
+        currentUser = CurrentUser.getInstance().currUser;
 
     }
 
@@ -348,10 +349,6 @@ public class AddFragment extends Fragment implements
         }
     }
 
-
-    private void getCurrentUser() {
-        currentUser = ParseUser.getCurrentUser();
-    }
 
     private ArrayList<String> usernamesToList(String usernames) {
         // step one : converting comma separate String to array of String

@@ -20,6 +20,7 @@ import com.example.wheretoeat.Constants;
 import com.example.wheretoeat.ParseService.MatchesQuery;
 import com.example.wheretoeat.adapters.FriendsAdapter;
 import com.example.wheretoeat.R;
+import com.example.wheretoeat.modals.CurrentUser;
 import com.facebook.AccessToken;
 import com.parse.FindCallback;
 import com.parse.ParseException;
@@ -78,7 +79,7 @@ public class GroupsFragment extends Fragment implements
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        getCurrentUser();
+        currentUser = CurrentUser.getInstance().currUser;
         return inflater.inflate(R.layout.fragment_groups, container, false);
 
     }
@@ -186,7 +187,4 @@ public class GroupsFragment extends Fragment implements
         }
     }
 
-    private void getCurrentUser() {
-        currentUser = ParseUser.getCurrentUser();
-    }
 }

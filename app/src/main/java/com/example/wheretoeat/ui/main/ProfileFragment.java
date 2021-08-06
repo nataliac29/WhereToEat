@@ -17,6 +17,7 @@ import android.widget.Toast;
 
 import com.example.wheretoeat.Constants;
 import com.example.wheretoeat.R;
+import com.example.wheretoeat.modals.CurrentUser;
 import com.facebook.AccessToken;
 import com.parse.FindCallback;
 import com.parse.ParseException;
@@ -30,8 +31,7 @@ public class ProfileFragment extends Fragment {
     TextView tvName;
     TextView tvUsername;
 
-    String firstName;
-    String lastName;
+    String name;
     String username;
 
     ParseUser currentUser;
@@ -40,12 +40,9 @@ public class ProfileFragment extends Fragment {
         // Required empty public constructor
     }
 
-    // Toast Message
-    public static final String ERROR_GETTING_USER = "Error getting user";
 
-    // Parse keyss
-    private static final String KEY_FIRST_NAME = Constants.KEY_FIRST_NAME;
-    public static final String KEY_LAST_NAME = Constants.KEY_LAST_NAME;
+    // Parse keys
+    private static final String KEY_NAME = Constants.KEY_NAME;
 
 
     @Override
@@ -72,44 +69,15 @@ public class ProfileFragment extends Fragment {
         tvName = view.findViewById(R.id.tvName);
         tvUsername = view.findViewById(R.id.tvUsername);
 
-        tvName.setText(firstName + " " + lastName);
+        tvName.setText(name);
         tvUsername.setText(username);
 
 
     }
 
     private void getCurrentUser() {
-        if (ParseUser.getCurrentUser() != null) {
-            currentUser = ParseUser.getCurrentUser();
-            username = currentUser.getUsername();
-            firstName = currentUser.getString(KEY_FIRST_NAME);
-            lastName = currentUser.getString(KEY_LAST_NAME);
-
-        } else {
-            AccessToken accessToken = AccessToken.getCurrentAccessToken();
-            boolean isLoggedIn = accessToken != null && !accessToken.isExpired();
-            if (isLoggedIn) {
-                SharedPreferences sharedPreferences = getContext().getSharedPreferences("FB_userId", Context.MODE_PRIVATE);
-                String currentUserId = sharedPreferences.getString("facebook_user_id", null);
-                ParseQuery<ParseUser> query = ParseUser.getQuery();
-                query.whereEqualTo("objectId", currentUserId);
-                // start an asynchronous call for posts
-                query.findInBackground(new FindCallback<ParseUser>() {
-                    @Override
-                    public void done(List<ParseUser> objects, ParseException e) {
-                        if (e == null) {
-                            currentUser = objects.get(0);
-                            username = currentUser.getUsername();
-                            firstName = currentUser.getString(KEY_FIRST_NAME);
-                            firstName = currentUser.getString(KEY_LAST_NAME);
-
-                        } else {
-                            Toast.makeText(getContext(), ERROR_GETTING_USER, Toast.LENGTH_SHORT).show();
-                        }
-
-                    }
-                });
-            }
-        }
+        currentUser = CurrentUser.getInstance().currUser;
+        username = currentUser.getUsername();
+        name = currentUser.getString(KEY_NAME);
     }
 }
