@@ -25,9 +25,11 @@ import com.example.wheretoeat.ui.main.SectionsPagerAdapter;
 import com.example.wheretoeat.databinding.ActivityMainBinding;
 import com.parse.ParseUser;
 
+
 public class MainActivity extends AppCompatActivity {
 
     private ActivityMainBinding binding;
+    boolean isFirstLogin;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,6 +44,9 @@ public class MainActivity extends AppCompatActivity {
         TabLayout tabs = binding.tabs;
         tabs.setupWithViewPager(viewPager);
         FloatingActionButton fab = binding.fab;
+
+        isFirstLogin = getIntent().getBooleanExtra("first", false);
+
 
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -60,6 +65,7 @@ public class MainActivity extends AppCompatActivity {
                 }
 
             });
+
     }
 
 }

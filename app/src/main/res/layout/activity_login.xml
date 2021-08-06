@@ -6,14 +6,16 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-    <com.facebook.login.widget.LoginButton
-        android:id="@+id/fb_login_button"
+
+    <TextView
+        android:id="@+id/textView4"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="30dp"
-        android:layout_marginBottom="30dp" />
-
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="15dp"
+        android:text="WhereToEat"
+        android:textAppearance="@style/TextAppearance.AppCompat.Display1" />
 
     <EditText
         android:id="@+id/etUsername"
@@ -46,7 +48,7 @@
         android:paddingEnd="10dp"
         android:inputType="textPassword"/>
 
-    <Button
+    <com.royrodriguez.transitionbutton.TransitionButton
         android:id="@+id/btnLogin"
         android:layout_width="match_parent"
         android:layout_height="55dp"
@@ -55,8 +57,11 @@
         android:layout_marginStart="20dp"
         android:layout_marginTop="20dp"
         android:layout_marginEnd="20dp"
-        android:backgroundTint="#008CF0"
-        android:text="LOG IN" />
+        android:backgroundTint="#4267B2"
+        android:text="Login"
+        android:textColor="@android:color/white"
+        app:defaultColor="#FF3700B3"
+        app:loaderColor="@android:color/white" />
 
     <Button
         android:id="@+id/btnToSignUp"
@@ -82,6 +87,7 @@
         android:layout_alignParentTop="true"
         android:layout_marginStart="20dp"
         android:layout_marginTop="78dp"
-        android:text="Log in via FB" />
+        android:text="Log in via FB"
+        android:backgroundTint="#4267B2"/>
 
 </RelativeLayout>

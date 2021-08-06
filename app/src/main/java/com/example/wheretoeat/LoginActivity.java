@@ -7,6 +7,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -21,6 +22,7 @@ import com.parse.LogInCallback;
 import com.parse.ParseException;
 import com.parse.ParseUser;
 import com.parse.facebook.ParseFacebookUtils;
+import com.royrodriguez.transitionbutton.TransitionButton;
 
 import org.json.JSONException;
 
@@ -31,7 +33,6 @@ import java.util.Collection;
 public class LoginActivity extends AppCompatActivity {
 
     // Toast/Alert messages
-    public static final String ERROR_LOGGING_IN = "Error logging in";
     public static final String SUCCESS = "Success!";
     public static final String OK = "OK";
     public static final String LOGIN_CANCELLED = "The user cancelled the Facebook login.";
@@ -43,11 +44,13 @@ public class LoginActivity extends AppCompatActivity {
     public static final String EMAIL = "email";
     public static final String WAIT = "Please, wait a moment.";
     public static final String IN_PROGRESS = "Logging in...";
+    public static final String ERROR = "Double check username/password";
+    public static final String FIRST_LOGIN = "First Time Login!";
 
 
     private EditText etUsername;
     private EditText etPassword;
-    private Button btnLogin;
+    private TransitionButton btnLogin;
     private Button btnToSignUp;
     private Button btnLoginFB;
 
@@ -77,6 +80,9 @@ public class LoginActivity extends AppCompatActivity {
         btnLogin.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                // Start the loading animation when the user tap the button
+                btnLogin.startAnimation();
+
                 String username = etUsername.getText().toString();
                 String password = etPassword.getText().toString();
                 loginUser(username, password);
@@ -138,13 +144,27 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void done(ParseUser user, ParseException e) {
                 if (e != null) {
-                    Toast.makeText(LoginActivity.this, ERROR_LOGGING_IN, Toast.LENGTH_LONG).show();
-                }
-                // Navigate to main activity if user has signed in successfully
-                goMainActivity();
-                Toast.makeText(LoginActivity.this, SUCCESS, Toast.LENGTH_SHORT);
-            }
+                    Toast.makeText(LoginActivity.this, ERROR, Toast.LENGTH_LONG).show();
+                    btnLogin.stopAnimation(TransitionButton.StopAnimationStyle.SHAKE, null);
+                } else {
+                    CurrentUser.getInstance().currUser = ParseUser.getCurrentUser();
 
+                    // so that buttons don't appear over transition animation
+                    btnToSignUp.setVisibility(View.GONE);
+                    btnLoginFB.setVisibility(View.GONE);
+                    Toast.makeText(LoginActivity.this, SUCCESS, Toast.LENGTH_SHORT);
+
+                    // Navigate to main activity if user has signed in successfully
+                    btnLogin.stopAnimation(TransitionButton.StopAnimationStyle.EXPAND, new TransitionButton.OnAnimationStopEndListener() {
+                            @Override
+                            public void onAnimationStopEnd() {
+                                Intent intent = new Intent(getBaseContext(), MainActivity.class);
+                                intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
+                                startActivity(intent);
+                            }
+                        });
+                    }
+                }
         });
     }
 
@@ -170,7 +190,7 @@ public class LoginActivity extends AppCompatActivity {
             }
             user.saveInBackground(e -> {
                 if (e == null) {
-                    showAlert("First Time Login!", "Welcome!");
+                    showAlert(FIRST_LOGIN, "Welcome!");
                 } else
                     showAlert("Error", e.getMessage());
             });

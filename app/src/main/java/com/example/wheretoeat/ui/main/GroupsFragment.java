@@ -17,11 +17,13 @@ import android.view.ViewGroup;
 import android.widget.Toast;
 
 import com.example.wheretoeat.Constants;
+import com.example.wheretoeat.MainActivity;
 import com.example.wheretoeat.ParseService.MatchesQuery;
 import com.example.wheretoeat.adapters.FriendsAdapter;
 import com.example.wheretoeat.R;
 import com.example.wheretoeat.modals.CurrentUser;
 import com.facebook.AccessToken;
+import com.google.android.material.tabs.TabLayout;
 import com.parse.FindCallback;
 import com.parse.ParseException;
 import com.parse.ParseObject;
@@ -32,6 +34,8 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import uk.co.samuelwall.materialtaptargetprompt.MaterialTapTargetPrompt;
 
 public class GroupsFragment extends Fragment implements
         MatchesQuery.getCurrUserGroupsInterface,
@@ -134,7 +138,6 @@ public class GroupsFragment extends Fragment implements
             // if no groups, don't have to add anything to adapter
             if (objects.size() == 0) {
                 Toast.makeText(getContext(), NO_GROUPS_MESSAGE, Toast.LENGTH_SHORT).show();
-                adapter.clear();
                 adapter.notifyDataSetChanged();
                 swipeContainer.setRefreshing(false);
                 return;
