@@ -74,8 +74,12 @@ dependencies {
     annotationProcessor 'org.parceler:parceler:1.1.12'
 
 
-    implementation 'com.facebook.android:facebook-login:5.15.3'
-    implementation 'com.facebook.android:facebook-android-sdk:5.15.3'
+    implementation 'com.facebook.android:facebook-login:[8.1)'
+    implementation "com.github.parse-community.Parse-SDK-Android:parse:1.26.0"
+    implementation "com.github.parse-community.Parse-SDK-Android:facebook:1.26.0"
+
+
+
 
 
     // For requesting location from user

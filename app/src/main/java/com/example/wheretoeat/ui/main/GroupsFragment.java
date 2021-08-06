@@ -187,29 +187,6 @@ public class GroupsFragment extends Fragment implements
     }
 
     private void getCurrentUser() {
-        if (ParseUser.getCurrentUser() != null) {
-            currentUser = ParseUser.getCurrentUser();
-        } else {
-            AccessToken accessToken = AccessToken.getCurrentAccessToken();
-            boolean isLoggedIn = accessToken != null && !accessToken.isExpired();
-            if (isLoggedIn) {
-                SharedPreferences sharedPreferences = getContext().getSharedPreferences("FB_userId", Context.MODE_PRIVATE);
-                String currentUserId = sharedPreferences.getString("facebook_user_id", null);
-                ParseQuery<ParseUser> query = ParseUser.getQuery();
-                query.whereEqualTo(Constants.KEY_OBJECTID, currentUserId);
-                // start an asynchronous call for posts
-                query.findInBackground(new FindCallback<ParseUser>() {
-                    @Override
-                    public void done(List<ParseUser> objects, ParseException e) {
-                        if (e == null) {
-                            currentUser = objects.get(0);
-                        } else {
-                            Toast.makeText(getContext(), "Error getting user", Toast.LENGTH_SHORT).show();
-                        }
-
-                    }
-                });
-            }
-        }
+        currentUser = ParseUser.getCurrentUser();
     }
 }

@@ -6,8 +6,8 @@
     <string name="back4app_server_url">https://parseapi.back4app.com/</string>
     <string name="back4app_app_id">siy8FKhoRPggzvXRPUqxIJQzQzZ1ijZ9L9BBSmGJ</string>
     <string name="back4app_client_key">nh0IvcLKerhjs0ngBxKGhX96mtfXsH0FKtVJVgVr</string>
-    <string name="facebook_app_id">568770524132064</string>
-    <string name="fb_login_protocol_scheme">fb568770524132064</string>
+    <string name="facebook_app_id">179745074097254</string>
+    <string name="fb_login_protocol_scheme">fb179745074097254</string>
     <string name="objectId">objectId</string>
     <string name="groupId">groupId</string>
     <string name="user">user</string>
