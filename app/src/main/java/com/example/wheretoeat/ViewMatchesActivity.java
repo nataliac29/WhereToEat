@@ -6,6 +6,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.wheretoeat.ParseService.GroupQuery;
@@ -23,6 +25,8 @@ public class ViewMatchesActivity extends AppCompatActivity implements GroupQuery
     String currGroup;
 
     ViewMatchesAdapter matchesAdapter;
+    RecyclerView rvMovies;
+    TextView tvNoMatches;
 
     GroupQuery groupQuery;
 
@@ -31,7 +35,9 @@ public class ViewMatchesActivity extends AppCompatActivity implements GroupQuery
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_view_matches);
 
-        RecyclerView rvMovies = findViewById(R.id.rvMatches);
+        rvMovies = findViewById(R.id.rvMatches);
+        tvNoMatches = findViewById(R.id.tvNoMatches);
+
         //Create the adapter
         restaurants = new JSONArray();
         currGroup = getIntent().getStringExtra("friendGroup");
@@ -52,14 +58,23 @@ public class ViewMatchesActivity extends AppCompatActivity implements GroupQuery
     @Override
     public void onFinishGetGroupId(ParseObject object, ParseException e) {
         if (e == null) {
-            for (int i=0; i <  object.getJSONArray(Constants.KEY_MUTUALMATCHES).length(); i++) {
-                try {
-                    restaurants.put(object.getJSONArray(Constants.KEY_MUTUALMATCHES).get(i));
-                } catch (JSONException jsonException) {
-                    jsonException.printStackTrace();
+            if (object.getJSONArray(Constants.KEY_MUTUALMATCHES).length() != 0) {
+                Log.e("View Matches", "here1");
+                rvMovies.setVisibility(View.VISIBLE);
+                tvNoMatches.setVisibility(View.GONE);
+                for (int i = 0; i < object.getJSONArray(Constants.KEY_MUTUALMATCHES).length(); i++) {
+                    try {
+                        restaurants.put(object.getJSONArray(Constants.KEY_MUTUALMATCHES).get(i));
+                    } catch (JSONException jsonException) {
+                        jsonException.printStackTrace();
+                    }
                 }
+                matchesAdapter.notifyDataSetChanged();
+            } else {
+                Log.e("View Matches", "here2");
+                rvMovies.setVisibility(View.GONE);
+                tvNoMatches.setVisibility(View.VISIBLE);
             }
-            matchesAdapter.notifyDataSetChanged();
 
         } else {
             // something went wrong

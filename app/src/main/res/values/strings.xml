@@ -25,5 +25,7 @@
     <string name="ViewDetails">View more details</string>
     <string name="MatchLike">LIKE</string>
     <string name="MatchDislike">clear</string>
+    <string name="add_instructions">Enter the usernames of the users you would like to add, separated by commas if adding more than one.</string>
+    <string name="go">Go</string>
 
 </resources>

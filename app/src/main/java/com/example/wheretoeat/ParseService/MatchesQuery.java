@@ -120,6 +120,7 @@ public class MatchesQuery {
                 // add key with groupId
                 try {
                     currentGroupInfo.put(KEY_GROUPID, group.getObjectId());
+                    currentGroupInfo.put("group", group);
                 } catch (JSONException jsonException) {
                     jsonException.printStackTrace();
                 }
@@ -175,6 +176,7 @@ public class MatchesQuery {
                 // display first and last names of every user in group
                 try {
                     currentGroupInfo.put(KEY_GROUP_MEMBERS, getGroupNames(groupUsers));
+                    currentGroupInfo.put("usernames", groupUsers);
                 } catch (JSONException jsonException) {
                     jsonException.printStackTrace();
                 }
@@ -244,6 +246,31 @@ public class MatchesQuery {
         });
 
     }
+
+    public void deleteGroup(ArrayList<ParseObject> users, ParseObject group) {
+        ParseQuery<ParseObject> query = ParseQuery.getQuery("Matches");
+        query.whereContainedIn(KEY_USER, users);
+        query.whereEqualTo(KEY_GROUPID, group);
+
+       query.findInBackground(new FindCallback<ParseObject>() {
+           @Override
+           public void done(List<ParseObject> objects, ParseException e) {
+               if (e == null) {
+                   Log.e("MatchesQuery", "here" + objects.toString());
+                   for (int i = 0; i < objects.size(); i++) {
+                       Log.e("MatchesQuery", "deleting this match row:" + objects.get(i).getObjectId());
+                       objects.get(i).deleteInBackground();
+                       if (i == (objects.size() - 1)) {
+                           group.deleteInBackground();
+                       }
+                   }
+               } else {
+                   Log.e("MatchesQuery", "error: ", e);
+               }
+           }
+       });
+    }
+
     public void saveMutualMatches(ParseObject group, JSONArray mutualMatches) {
         group.put(KEY_MUTUALMATCHES, mutualMatches);
         group.saveInBackground();
@@ -282,4 +309,5 @@ public class MatchesQuery {
         // substring removes the comma put before the first group member
         return names.substring(2);
     }
+
 }

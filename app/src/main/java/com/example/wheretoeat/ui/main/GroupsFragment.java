@@ -35,6 +35,8 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
+import jp.wasabeef.recyclerview.adapters.AlphaInAnimationAdapter;
+import jp.wasabeef.recyclerview.adapters.ScaleInAnimationAdapter;
 import uk.co.samuelwall.materialtaptargetprompt.MaterialTapTargetPrompt;
 
 public class GroupsFragment extends Fragment implements
@@ -99,7 +101,7 @@ public class GroupsFragment extends Fragment implements
         // set adapter
         adapter = new FriendsAdapter(getContext(), allGroups);
 
-        rvFriends.setAdapter(adapter);
+        rvFriends.setAdapter(new ScaleInAnimationAdapter(adapter));
         rvFriends.setLayoutManager(new LinearLayoutManager(getContext()));
 
         // get instance of Matches Parse helper class

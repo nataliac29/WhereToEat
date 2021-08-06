@@ -94,7 +94,7 @@ public class AddFragment extends Fragment implements
     boolean isGroup;
 
     // keep track of whether user adding already added friend
-    boolean groupAlreadyExists;
+    boolean groupAlreadyExists = false;
 
     // when iterating through user's existing groups, check if on last group
     boolean onLastGroup;
@@ -226,9 +226,7 @@ public class AddFragment extends Fragment implements
             if (objects.size() == 0) {
                 showEditDialog();
             }
-
             onLastGroup = false;
-
             // iterate through every group
             for (int i = 0; i < objects.size(); i++) {
 
@@ -272,6 +270,10 @@ public class AddFragment extends Fragment implements
         if (!groupAlreadyExists) {
             showEditDialog();
         }
+        // reset
+        onLastGroup = false;
+        groupAlreadyExists = false;
+        isGroup = false;
     }
 
 

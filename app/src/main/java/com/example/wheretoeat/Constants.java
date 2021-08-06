@@ -19,7 +19,7 @@ public class Constants {
     // Yelp API json constants
     public static final String KEY_CATEGORIES = "categories";
     public static final String KEY_RATING = "rating";
-    public static final String KEY_IMAGE_URL = "imageURL";
+    public static final String KEY_IMAGE_URL = "imageUrl";
     public static final String KEY_ID = "id";
 
 

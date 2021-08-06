@@ -1,5 +1,6 @@
 package com.example.wheretoeat.adapters;
 
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -18,17 +19,21 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.wheretoeat.Constants;
+import com.example.wheretoeat.MainActivity;
 import com.example.wheretoeat.ParseService.MatchesQuery;
 import com.example.wheretoeat.MatchActivity;
 import com.example.wheretoeat.R;
 import com.example.wheretoeat.ViewMatchesActivity;
+import com.example.wheretoeat.modals.CurrentUser;
 import com.facebook.AccessToken;
 import com.parse.FindCallback;
+import com.parse.Parse;
 import com.parse.ParseException;
 import com.parse.ParseObject;
 import com.parse.ParseQuery;
 import com.parse.ParseUser;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -37,6 +42,9 @@ import java.util.List;
 
 public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.ViewHolder>{
 
+
+    public static final String PAIR_WARNING_MESSAGE = "You are deleting a group with one other person, which will delete the entire group for both people. Proceed?";
+    public static final String GROUP_WARNING_MESSAGE = " Deleting this group will only remove yourself from the group. Proceed?";
 
     // key for intent extra to MatchActivity and ViewMatchesActivity
     private final String KEY_INTENT = "friendGroup";
@@ -90,8 +98,15 @@ public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.ViewHold
         notifyDataSetChanged();
     }
 
+    public void remove(JSONObject item) {
+        int position = groups.indexOf(item);
+        groups.remove(position);
+        notifyItemRemoved(position);
+        notifyDataSetChanged();
+    }
 
-    class ViewHolder extends RecyclerView.ViewHolder{
+
+    class ViewHolder extends RecyclerView.ViewHolder implements View.OnLongClickListener {
 
         private TextView tvName;
         private TextView tvGroupUsers;
@@ -99,6 +114,10 @@ public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.ViewHold
 
         // stores Parse Object of current group
         private String currGroupId;
+        private ParseObject currentGroup;
+        private JSONObject currGroupObj;
+        String groupName;
+        ArrayList<ParseObject> groupUsers;
 
 
         public ViewHolder(@NonNull View itemView) {
@@ -107,11 +126,13 @@ public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.ViewHold
             tvGroupUsers = itemView.findViewById(R.id.tvGroupUsers);
             btnBeginMatch = itemView.findViewById(R.id.btnBeginMatch);
             btnBeginMatch.setOnClickListener(this::onClick);
+            itemView.setOnLongClickListener(this::onLongClick);
 
 
         }
 
         private void onClick(View view) {
+            view.setLongClickable(true);
             // gets item position
             int position = getAdapterPosition();
             // make sure the position is valid, i.e. actually exists in the view
@@ -148,6 +169,8 @@ public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.ViewHold
             // store group in global variable
             currGroupId = group.getString(MatchesQuery.KEY_GROUPID);
             // reset group name to visible in case disabled with previous group
+
+            currGroupObj = group;
             tvName.setVisibility(View.VISIBLE);
 
             // depending on state of group adjust button text
@@ -166,9 +189,9 @@ public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.ViewHold
                     break;
             }
 
-            String groupName = group.getString(MatchesQuery.KEY_GROUP_NAME);
+            groupName = group.getString(MatchesQuery.KEY_GROUP_NAME);
             // if only a 2 person group, no group name, so remove group name text view and bold name of other user
-            if ( groupName.equals("")) {
+            if (groupName.equals("")) {
                 tvName.setVisibility(View.GONE);
                 tvGroupUsers.setTypeface(Typeface.DEFAULT_BOLD);
             } else {
@@ -179,8 +202,49 @@ public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.ViewHold
 
             tvGroupUsers.setText(group.getString(MatchesQuery.KEY_GROUP_MEMBERS));
 
+            currentGroup = (ParseObject) group.get("group");
+            groupUsers = (ArrayList<ParseObject>) group.get("usernames");
+
         }
-  }
+
+        @Override
+        public boolean onLongClick(View v) {
+            showAlert();
+            return true;
+        }
+
+
+        private void showAlert() {
+            AlertDialog.Builder builder = new AlertDialog.Builder(context)
+                    .setTitle("Delete Group")
+                    .setNegativeButton("CANCEL", (dialog, which) -> {
+                        dialog.cancel();
+                    });
+
+            ArrayList<ParseObject> userList = new ArrayList<ParseObject>();
+            userList.add(currentUser);
+            if (!groupName.equals("")) {
+                builder.setMessage(GROUP_WARNING_MESSAGE)
+                .setPositiveButton("OK", (dialog, which) -> {
+                    dialog.cancel();
+                    matchesQuery.deleteGroup(userList, currentGroup);
+                    remove(currGroupObj);
+                    Toast.makeText(context, "Removed from group", Toast.LENGTH_SHORT).show();
+                });
+            } else {
+                builder.setMessage(PAIR_WARNING_MESSAGE)
+                        .setPositiveButton("OK", (dialog, which) -> {
+                            dialog.cancel();
+                            userList.addAll(groupUsers);
+                            matchesQuery.deleteGroup(userList, currentGroup);
+                            remove(currGroupObj);
+                            Toast.makeText(context, "Deleted group", Toast.LENGTH_SHORT).show();
+                        });
+            }
+            AlertDialog ok = builder.create();
+            ok.show();
+        }
+    }
 
 
 }
